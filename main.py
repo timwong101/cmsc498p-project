@@ -16,6 +16,8 @@ from pyspark.sql import Window
 import pandas as pd
 import numpy as np
 import math
+from scipy.spatial.distance import pdist, squareform
+import copy
 
 
 class DisplayRDD:
@@ -94,6 +96,14 @@ def nearestCluster(row):
 
   return min(nearestClustersMap, key=nearestClustersMap.get)
 
+def exactMedoidUpdate(patternsInClusters):
+    patterns = np.asmatrix(patternsInClusters)
+    distanceMatrix = pdist(patterns, 'euclidean')
+    sumRows = squareform(distanceMatrix).sum(axis = 1)
+    minIndex = np.argmin(sumRows)
+    newMedoid = patternsInClusters.iloc[minIndex].to_frame().transpose()
+    return newMedoid
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # conf = SparkConf().setAppName("project-gam")
@@ -106,13 +116,14 @@ if __name__ == '__main__':
     df = sqlContext.read.format('com.databricks.spark.csv').options(header='true', inferschema='true').load(
         "mushroom-attributions-200-samples.csv")
 
-    max_iter = 10; k = 5
+    max_iter = 10; k = 3; WCSoD1 = float("inf")
     approximateTrackingFlag = False
     medoids = initialSeeds(df, k)
     for iter in range(0,max_iter):
-        previousMedoids = medoids
+        previousMedoids = copy.deepcopy(medoids)
+        print("--------------------------------")
+        print(previousMedoids)
         dfp = df.toPandas()
-
 
         distances_series = dfp.apply(distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
         nearestDistancesPDF = distances_series.to_frame()  # nearestRDD = distancesRDD.map(min(distanceVector))
@@ -120,7 +131,7 @@ if __name__ == '__main__':
         nearest_clusters = dfp.apply(nearestCluster, axis=1)  # nearestClusterRDD = distancesRDD.map(argmin(distanceVector));
         nearestClustersPDF = nearest_clusters.to_frame()
 
-        for m in medoids:
+        for mindex, m in enumerate(medoids):
             clID = m.index[0]
             patternsIndex = []
             nearestClustersPDF_flat = nearestClustersPDF.values.flatten()
@@ -128,6 +139,14 @@ if __name__ == '__main__':
                 if nearestClustersPDF_flat[i] == clID:
                     patternsIndex.append(i)
             patternsInClusterPDF = dfp.iloc[patternsIndex,:]
-            display = DisplayRDD(sc.parallelize(dfp, 5))
+            newMedoid = exactMedoidUpdate(patternsInClusterPDF)
+            medoids[mindex] = newMedoid
+        WCSoD2 = nearestDistancesPDF.sum(axis = 0)[0]
+        if abs(WCSoD1 - WCSoD2) < .000000000001:
+            medoids = previousMedoids
+            break
+        else:
+            WCSoD1 = WCSoD2
+    print("--------------------------------")
     print(medoids)
 
