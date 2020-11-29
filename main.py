@@ -18,6 +18,8 @@ import numpy as np
 import math
 from scipy.spatial.distance import pdist, squareform
 import copy
+import multiprocessing as mp
+from multiprocessing import  Pool
 
 
 class DisplayRDD:
@@ -45,6 +47,18 @@ def distance(row):
     vector.append(sum)
   # print("vector: ", vector)
   return min(vector)
+
+def _apply_df(args):
+    df, func, num, kwargs = args
+    return num, df.apply(func, **kwargs)
+
+def apply_by_multiprocessing(df, func, **kwargs):
+    workers = kwargs.pop('workers')
+    pool = mp.Pool(processes=workers)
+    result = pool.map(_apply_df, [(d, func, i, kwargs) for i, d in enumerate(np.array_split(df, workers))])
+    pool.close()
+    result = sorted(result, key=lambda x: x[0])
+    return pd.concat([i[1] for i in result])
 
 def initialSeeds(df, k):
   N = df.count()
@@ -104,6 +118,15 @@ def exactMedoidUpdate(patternsInClusters):
     newMedoid = patternsInClusters.iloc[minIndex].to_frame().transpose()
     return newMedoid
 
+def parallelize_dataframe(df, func, n_cores=4):
+    df_split = np.array_split(df, n_cores)
+    pool = Pool(n_cores)
+    #df = pd.concat(pool.map(func, df_split))
+    df = pd.concat(pool.map(func, df_split))
+    pool.close()
+    pool.join()
+    return df
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # conf = SparkConf().setAppName("project-gam")
@@ -125,7 +148,10 @@ if __name__ == '__main__':
         print(previousMedoids)
         dfp = df.toPandas()
 
-        distances_series = dfp.apply(distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
+        distances_series  = apply_by_multiprocessing(dfp, distance, axis=1, workers=4)
+
+        #distances_series = parallelize_dataframe(dfp, distance)
+        #distances_series = dfp.apply(distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
         nearestDistancesPDF = distances_series.to_frame()  # nearestRDD = distancesRDD.map(min(distanceVector))
 
         nearest_clusters = dfp.apply(nearestCluster, axis=1)  # nearestClusterRDD = distancesRDD.map(argmin(distanceVector));
