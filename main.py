@@ -168,11 +168,14 @@ if __name__ == '__main__':
             newMedoid = exactMedoidUpdate(patternsInClusterPDF)
             medoids[mindex] = newMedoid
         WCSoD2 = nearestDistancesPDF.sum(axis = 0)[0]
-        if abs(WCSoD1 - WCSoD2) < .000000000001:
+        #if abs(WCSoD1 - WCSoD2) < .000000000001:
+        print("WCSoD1: ", WCSoD1, "WCSoD2: ", WCSoD2)
+        if abs(WCSoD1 - WCSoD2) == 0:
+            print("--------------------------------")
+            print(medoids)
             medoids = previousMedoids
             break
         else:
+
             WCSoD1 = WCSoD2
-    print("--------------------------------")
-    print(medoids)
 
