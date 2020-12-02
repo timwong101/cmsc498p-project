@@ -39,9 +39,6 @@ def apply_by_multiprocessing(df, func, **kwargs):
     result = sorted(result, key=lambda x: x[0])
     return pd.concat([i[1] for i in result])
 
-
-
-
 def nearestCluster(row):
   nearestClustersMap = {}
   row_df = row.to_frame()
@@ -116,7 +113,7 @@ class ParallelMedoids:
         medoidsList.append(sample)
 
         for iter in range(1, k):
-            distances_series = dfp.apply(distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
+            distances_series = dfp.apply(self.distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
             distancesdf = distances_series.to_frame()  # nearestRDD = distancesRDD.map(min(distanceVector))
 
             distances_array = np.concatenate(distancesdf.values,
@@ -149,7 +146,7 @@ class ParallelMedoids:
             print(previousMedoids)
             dfp = df.toPandas()
 
-            distances_series  = apply_by_multiprocessing(dfp, distance, axis=1, workers=4)
+            distances_series  = apply_by_multiprocessing(dfp, self.distance, axis=1, workers=4)
 
             #distances_series = parallelize_dataframe(dfp, distance)
             #distances_series = dfp.apply(distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
@@ -183,14 +180,8 @@ class ParallelMedoids:
         """
         Fits kmedoids with the option for plotting
         """
-        centers, members, _, _, _ = self.kmedoids_run(
-            X,
-            self.n_clusters,
-            self.dist_func,
-            max_iter=self.max_iter,
-            tol=self.tol,
-            verbose=verbose,
-        )
+        centers, members = self.kmedoids_run(X, self.n_clusters, self.dist_func,
+                                             max_iter=self.max_iter, tol=self.tol, verbose=verbose,)
 
         # set centers as instance attributes
         self.centers = centers
@@ -214,6 +205,83 @@ class ParallelMedoids:
                     marker="*",
                 )
 
+    def kmedoids_run(self, X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=True):
+        """Runs kmedoids algorithm with custom dist_func.
+        Returns: centers, members, costs, tot_cost, dist_mat
+        """
+        if verbose:
+            print("Initial centers are ", init_ids)
+        if verbose:
+            print("Members - ", members.shape)
+            print("Costs - ", costs.shape)
+            print("Total cost - ", tot_cost)
+        print("Max Iterations: ", max_iter)
+        if verbose:
+            print("Change centers to ", centers)
+        if cc > max_iter:
+            if verbose:
+                print("End Searching by reaching maximum iteration", max_iter)
+        if verbose:
+            print("End Searching by no swaps")
+        print("Starting Iteration: ", cc)
+        return centers, members
+
+'''
+    def kmedoids_run(self, X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=True):
+        """Runs kmedoids algorithm with custom dist_func.
+        Returns: centers, members, costs, tot_cost, dist_mat
+        """
+        # Get initial centers
+        n_samples, _ = X.shape
+        init_ids = _get_init_centers(n_clusters, n_samples)
+        if verbose:
+            print("Initial centers are ", init_ids)
+        centers = init_ids
+        members, costs, tot_cost, dist_mat = _get_cost(X, init_ids, dist_func)
+        if verbose:
+            print("Members - ", members.shape)
+            print("Costs - ", costs.shape)
+            print("Total cost - ", tot_cost)
+        cc, swaped = 0, True
+        print("Max Iterations: ", max_iter)
+        while True:
+            swaped = False
+            for i in range(n_samples):
+                if i not in centers:
+                    for j in range(len(centers)):
+                        centers_ = deepcopy(centers)
+                        centers_[j] = i
+                        members_, costs_, tot_cost_, dist_mat_ = _get_cost(
+                            X, centers_, dist_func
+                        )
+                        if tot_cost_ - tot_cost < tol:
+                            members, costs, tot_cost, dist_mat = (
+                                members_,
+                                costs_,
+                                tot_cost_,
+                                dist_mat_,
+                            )
+                            centers = centers_
+                            swaped = True
+                            if verbose:
+                                print("Change centers to ", centers)
+                            self.centers = centers
+                            self.members = members
+            if cc > max_iter:
+                if verbose:
+                    print("End Searching by reaching maximum iteration", max_iter)
+                break
+            if not swaped:
+                if verbose:
+                    print("End Searching by no swaps")
+                break
+            cc += 1
+            print("Starting Iteration: ", cc)
+        return centers, members, costs, tot_cost, dist_mat
+'''
+    def predict(self, X):
+        raise NotImplementedError()
+
     def __init__(self, n_clusters = 1, dist_func=_get_distance, max_iter=1000, tol=0.0001, f = "mushroom-attributions-200-samples.csv"):        # conf = SparkConf().setAppName("project-gam")
         self.filename = f
         self.k = n_clusters
@@ -222,3 +290,4 @@ class ParallelMedoids:
         self.tol = tol
         self.centers = None
         self.members = None
+

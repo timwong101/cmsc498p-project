@@ -52,7 +52,8 @@ class GAM:
     ):
         self.attributions_path = attributions_path
         self.cluster_method = cluster_method
-
+        self.distance = distance
+        self.local_attribution_path = attributions_path
 
         if self.distance == "euclidean":
             self.distance_function = self._get_distance
