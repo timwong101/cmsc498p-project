@@ -53,7 +53,7 @@ class GAM:
         self.attributions_path = attributions_path
         self.cluster_method = cluster_method
 
-
+        self.distance = distance
         if self.distance == "euclidean":
             self.distance_function = self._get_distance
         elif self.distance == "spearman":
@@ -128,7 +128,7 @@ class GAM:
                 dist_func=self.distance_function,
                 max_iter=self.max_iter,
                 tol=self.tol,
-                f = self.local_attribution_path
+                f = self.attributions_path
             )
             clusters.fit(self.clustering_attributions, verbose=False)
 

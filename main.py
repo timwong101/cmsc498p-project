@@ -1,7 +1,7 @@
 """
 Code up using Apache Spark
 """
-"""
+
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 import pandas as pd
@@ -11,6 +11,10 @@ from scipy.spatial.distance import pdist, squareform
 import copy
 import multiprocessing as mp
 from multiprocessing import  Pool
+from pandas.plotting import parallel_coordinates
+import matplotlib.pyplot as plt
+from matplotlib.cm import get_cmap
+
 
 
 class DisplayRDD:
@@ -133,20 +137,21 @@ if __name__ == '__main__':
     max_iter = 10; k = 3; WCSoD1 = float("inf")
     approximateTrackingFlag = False
     medoids = initialSeeds(df, k)
+    global nearestClustersGlobal
+    dfp = df.toPandas()
     for iter in range(0,max_iter):
         previousMedoids = copy.deepcopy(medoids)
         print("--------------------------------")
         print(previousMedoids)
-        dfp = df.toPandas()
 
         distances_series  = apply_by_multiprocessing(dfp, distance, axis=1, workers=4)
-
         #distances_series = parallelize_dataframe(dfp, distance)
         #distances_series = dfp.apply(distance, axis=1)  # distancesRDD = datasetRDD.map(d(pattern,medoids)
         nearestDistancesPDF = distances_series.to_frame()  # nearestRDD = distancesRDD.map(min(distanceVector))
 
         nearest_clusters = dfp.apply(nearestCluster, axis=1)  # nearestClusterRDD = distancesRDD.map(argmin(distanceVector));
         nearestClustersPDF = nearest_clusters.to_frame()
+        nearestClustersGlobal = nearestClustersPDF
 
         for mindex, m in enumerate(medoids):
             clID = m.index[0]
@@ -167,7 +172,18 @@ if __name__ == '__main__':
             medoids = previousMedoids
             break
         else:
-
             WCSoD1 = WCSoD2
 
-"""
+    groupsDict = {}
+    for i in range(len(medoidsList)):
+        groupsDict[medoidsList[i].index[0]] = nearestClustersGlobal[nearestClustersGlobal[0] == medoidsList[i].index[0]].index.tolist()
+    groupsList = []
+    for i in list(groupsDict.keys()):
+        groupsList.append(groupsDict[i])
+    print(groupsDict)
+    dfp['medoid'] = 0
+    for key, value in groupsDict.items():
+        dfp.loc[value, 'medoid'] = key
+    parallel_coordinates(dfp, class_column='medoid', colormap=get_cmap("Set1"))
+    plt.show()
+
