@@ -2,17 +2,8 @@
 Code up using Apache Spark
 """
 
-import pyspark
-from pyspark import SparkContext, SparkConf
-import csv
-import random
+from pyspark import SparkContext
 from pyspark.sql import SQLContext
-from pyspark.sql.types import *
-from pyspark.sql import SparkSession
-from pyspark.sql import Row
-from pyspark.sql.types import StructType, StructField, LongType
-from pyspark.sql.functions import row_number, monotonically_increasing_id
-from pyspark.sql import Window
 import pandas as pd
 import numpy as np
 import math
