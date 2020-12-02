@@ -131,7 +131,8 @@ class GAM:
                 tol=self.tol,
                 f = self.local_attribution_path
             )
-            clusters.fit(self.clustering_attributions, verbose=False)
+            # clusters.fit(self.clustering_attributions, verbose=False)
+            clusters.fit(verbose=False)
 
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
@@ -166,8 +167,9 @@ class GAM:
         """
         explanations = []
 
-        for center_index in centers:
+        for index, center in enumerate(centers):
             # explanation_weights = self.normalized_attributions[center_index]
+            center_index = center.index[0]
             explanation_weights = self.clustering_attributions[center_index]
             explanations.append(list(zip(self.feature_labels, explanation_weights)))
         return explanations
@@ -213,16 +215,15 @@ class GAM:
             self.clustering_attributions = GAM.normalize(self.attributions)
         else:
             self.clustering_attributions = self.attributions
-        print(type(self.attributions))
-        print("str: ",str(self.attributions))
+        print("self.attributions: ",str(self.attributions))
         self._cluster()
         if self.scoring_method:
             self.score = self.scoring_method(self)
 
 if __name__ == '__main__':
-    print("start")
+    print("start main")
     local_attribution_path = '../mushroom-attributions-200-samples.csv'
-    g = GAM(attributions_path = local_attribution_path, k=3)
+    g = GAM(attributions_path = local_attribution_path, k=1)
     g.generate()
     g.plot(num_features=7)
     g.subpopulation_sizes
