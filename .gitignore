@@ -1,0 +1,5 @@
+gam_package/__pycache__/
+.idea/*
+.idea
+*.iml
+*.xml
