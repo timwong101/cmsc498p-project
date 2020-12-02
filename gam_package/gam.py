@@ -12,6 +12,7 @@ from sklearn.metrics import pairwise_distances, silhouette_score
 from clustering import KMedoids
 from kendall_tau_distance import mergeSortDistance
 from spearman_distance import spearman_squared_distance
+from parallel_medoids import ParallelMedoids
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
@@ -34,12 +35,16 @@ class GAM:
         tol (float): tolerance denoting minimal acceptable amount of improvement, controls early stopping, default=1e-3
     """
 
+    def _get_distance(data1, data2):
+        """example distance function"""
+        return np.sqrt(np.sum((data1 - data2) ** 2))
+
     def __init__(
         self,
         k=2,
-        attributions_path="local_attributions.csv",
+        attributions_path='../mushroom-attributions-200-samples.csv',
         cluster_method=None,
-        distance="spearman",
+        distance="euclidean",
         use_normalized=True,
         scoring_method=None,
         max_iter=100,
@@ -48,8 +53,10 @@ class GAM:
         self.attributions_path = attributions_path
         self.cluster_method = cluster_method
 
-        self.distance = distance
-        if self.distance == "spearman":
+
+        if self.distance == "euclidean":
+            self.distance_function = self._get_distance
+        elif self.distance == "spearman":
             self.distance_function = spearman_squared_distance
         elif self.distance == "kendall":
             self.distance_function = mergeSortDistance
@@ -116,11 +123,12 @@ class GAM:
         # , distance_function=spearman_squared_distance, max_iter=1000, tol=0.0001):
         """Calls local kmedoids module to group attributions"""
         if self.cluster_method is None:
-            clusters = KMedoids(
+            clusters = ParallelMedoids(
                 self.k,
                 dist_func=self.distance_function,
                 max_iter=self.max_iter,
                 tol=self.tol,
+                f = self.local_attribution_path
             )
             clusters.fit(self.clustering_attributions, verbose=False)
 
