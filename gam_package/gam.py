@@ -132,7 +132,7 @@ class GAM:
                 f = self.local_attribution_path
             )
             # clusters.fit(self.clustering_attributions, verbose=False)
-            clusters.fit(verbose=False)
+            clusters.fit(self.clustering_attributions, verbose=False)
 
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)

@@ -59,6 +59,8 @@ class ParallelMedoids:
         return min(nearestClustersMap, key=nearestClustersMap.get)
 
     def exactMedoidUpdate(self, patternsInClusters, verbose=True):
+        if len(patternsInClusters) == 0:
+            return None
         patterns = np.asmatrix(patternsInClusters)
         distanceMatrix = pdist(patterns, 'euclidean')
         sumRows = squareform(distanceMatrix).sum(axis=1)
@@ -137,7 +139,7 @@ class ParallelMedoids:
         self.medoids = self.initialSeeds(df, k)
         if verbose:
             print("Initial centers are ", self.medoids)
-        members = [0]*len(self.medoids)
+        self.members = [0]*len(self.medoids)
         for iter in range(0,max_iter):
             print("\n\n------------------------------------------------------------------------------------------------")
             print("Starting Iteration: ", iter+1)
@@ -149,7 +151,8 @@ class ParallelMedoids:
             distances_series  = self.apply_by_multiprocessing(dfp, self.distance, axis=1, workers=4)
             nearestDistancesPDF = distances_series.to_frame()  # nearestRDD = distancesRDD.map(min(distanceVector))
 
-            nearest_clusters = dfp.apply(self.nearestCluster, axis=1)  # nearestClusterRDD = distancesRDD.map(argmin(distanceVector));
+            # nearest_clusters = dfp.apply(self.nearestCluster, axis=1)  # nearestClusterRDD = distancesRDD.map(argmin(distanceVector));
+            nearest_clusters  = self.apply_by_multiprocessing(dfp, self.nearestCluster, axis=1, workers=4)
             nearestClustersPDF = nearest_clusters.to_frame()
 
             for mindex, m in enumerate(self.medoids):
@@ -165,8 +168,11 @@ class ParallelMedoids:
                 if verbose:
                     print("Members - ", patternsInClusterPDF.shape)
                 newMedoid = self.exactMedoidUpdate(patternsInClusterPDF)
-                self.medoids[mindex] = newMedoid
-                members[mindex] = patternsInClusterPDF
+
+                if len(patternsInClusterPDF) > 0:
+                    self.medoids[mindex] = newMedoid
+
+                self.members[mindex] = patternsInClusterPDF
             if verbose:
                 print("Change centers to ", self.medoids)
             if verbose and iter+1 > max_iter:
@@ -186,9 +192,9 @@ class ParallelMedoids:
 
 
         print('here')
-        return self.medoids, members
+        return self.medoids, self.members
 
-    def fit(self, plotit=False, verbose=True):
+    def fit(self, X, plotit=False, verbose=True):
         """
         Fits kmedoids with the option for plotting
         """
