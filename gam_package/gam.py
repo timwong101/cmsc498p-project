@@ -123,23 +123,17 @@ class GAM:
         # , distance_function=spearman_squared_distance, max_iter=1000, tol=0.0001):
         """Calls local kmedoids module to group attributions"""
         if self.cluster_method is None:
-            clusters = ParallelMedoids(
-                self.k,
-                dist_func=self.distance_function,
-                max_iter=self.max_iter,
-                tol=self.tol,
-                f = self.attributions_path
-            )
-            clusters.fit(self.clustering_attributions, verbose=False)
+            clusters = ParallelMedoids()
+            n = clusters.fit(X = self.clustering_attributions, verbose=False)
 
             self.subpopulations = clusters.members
-            self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
         else:
             self.cluster_method(self)
 
     @staticmethod
-    def get_subpopulation_sizes(subpopulations):
+    def get_subpopulation_sizes(n, subpopulations):
         """Computes the sizes of the subpopulations using membership array
 
         Args:
@@ -149,7 +143,11 @@ class GAM:
         Returns:
             list: size of each subpopulation ordered by index. Example: [3, 1]
         """
-        index_to_size = Counter(subpopulations)
+        subpop = [None]*n
+        for medoidIndex, members in enumerate(subpopulations):
+            for rowIndex in members:
+                subpop[rowIndex] = medoidIndex
+        index_to_size = Counter(subpop)
         sizes = [index_to_size[i] for i in sorted(index_to_size)]
 
         return sizes
