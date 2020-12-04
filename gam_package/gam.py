@@ -12,7 +12,7 @@ from sklearn.metrics import pairwise_distances, silhouette_score
 from clustering import KMedoids
 from kendall_tau_distance import mergeSortDistance
 from spearman_distance import spearman_squared_distance
-from parallel_medoids import ParallelMedoids
+from parallel_medoids_broke import ParallelMedoids
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
