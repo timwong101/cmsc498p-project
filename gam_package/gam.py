@@ -14,6 +14,7 @@ from gam_package.kendall_tau_distance import mergeSortDistance
 from gam_package.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot
+from gam_package.ranked_medoids import RankedMedoids
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
@@ -287,7 +288,15 @@ class GAM:
             radarPlot(dfp, mlist)
             facetedRadarPlot(dfp, mlist)
         elif self.cluster_method == "ranked medoids":
-            pass
+            clusters = RankedMedoids()
+            n = clusters.fit(X=self.clustering_attributions, verbose=False)
+
+            self.subpopulations = clusters.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
+            self.explanations = self._get_explanations(clusters.centers)
+            #parallelPlot(dfp)
+            #radarPlot(dfp, mlist)
+            #facetedRadarPlot(dfp, mlist)
         elif self.cluster_method == "spectral clustering":
             pass
         else: # use passed in cluster_method and pass in GAM itself

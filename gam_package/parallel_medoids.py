@@ -1,4 +1,3 @@
-
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 import pandas as pd
@@ -156,7 +155,7 @@ class ParallelMedoids:
 
         # sets up the initial df and initializes variables
         df = sqlContext.read.format('com.databricks.spark.csv').options(header='true', inferschema='true').load(
-                                    "../mushroom-attributions-200-samples.csv")
+                                    "data/mushroom-attributions-200-samples.csv")
         max_iter = 10; k = 3; sumOfDistances1 = float("inf")
 
         # set medoids equal to the initial medoids
