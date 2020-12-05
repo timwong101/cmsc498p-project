@@ -179,8 +179,8 @@ class GAM:
             explanations.append(list(zip(self.feature_labels, explanation_weights)))
         return explanations
 
-    '''
-        def plot(self, num_features=5, output_path_base=None, display=True):
+
+    def plot(self, num_features=5, output_path_base=None, display=True):
         """Shows bar graph of feature importance per global explanation
 
         Args:
@@ -212,8 +212,8 @@ class GAM:
 
             if display:
                 plt.show()
-    '''
-    def plot(self, gam_explanations, num_features=5, output_path_base=None, display=True):
+
+    def plot_explanations(self, gam_explanations, num_features=5, output_path_base=None, display=True):
         """Shows bar graph of feature importance per global explanation
 
         Args:
