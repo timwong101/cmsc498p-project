@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import pairwise_distances, silhouette_score
 
+from ranked_medoids import RankedMedoids
 from clustering import KMedoids
 from kendall_tau_distance import mergeSortDistance
 from spearman_distance import spearman_squared_distance
@@ -123,7 +124,8 @@ class GAM:
         # , distance_function=spearman_squared_distance, max_iter=1000, tol=0.0001):
         """Calls local kmedoids module to group attributions"""
         if self.cluster_method is None:
-            clusters = ParallelMedoids()
+            # clusters = ParallelMedoids()
+            clusters = RankedMedoids()
             n = clusters.fit(X = self.clustering_attributions, verbose=False)
 
             self.subpopulations = clusters.members
