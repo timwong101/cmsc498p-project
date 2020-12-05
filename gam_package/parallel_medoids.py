@@ -18,7 +18,7 @@ from math import pi
 
 class ParallelMedoids:
     def __init__(self, n_clusters=1, dist_func='euclidean', max_iter=1000, tol=0.0001,
-                 f="mushroom-attributions-200-samples.csv"):  # conf = SparkConf().setAppName("project-gam")
+                 f="data/mushroom-attributions-200-samples.csv"):  # conf = SparkConf().setAppName("project-gam")
         self.filename = f
         self.k = n_clusters
         if dist_func == 'euclidean':

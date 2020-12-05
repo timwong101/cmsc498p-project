@@ -120,6 +120,20 @@ class GAM:
         #pd.get_dummies(obj_df, columns=["drive_wheels"]).head()
 
     @staticmethod
+    def get_subpopulation_sizes(subpopulations):
+        """Computes the sizes of the subpopulations using membership array
+        Args:
+            subpopulations (list): contains index of cluster each sample belongs to.
+                Example, [0, 1, 0, 0].
+        Returns:
+            list: size of each subpopulation ordered by index. Example: [3, 1]
+        """
+        index_to_size = Counter(subpopulations)
+        sizes = [index_to_size[i] for i in sorted(index_to_size)]
+
+        return sizes
+
+    @staticmethod
     def get_subpopulation_sizes_lol(n, subpopulations):
         """Computes the sizes of the subpopulations using membership array
 
@@ -248,10 +262,21 @@ class GAM:
         # Use the distance metric and k-medoids algorithm specified
         # max_iter = maximum number of k-medoid updates
         # tol = minimum error for medoid optimum
-        if self.cluster_method is None:
-            pass
+        if self.cluster_method is None: # use regular k-medoids
+            clusters = KMedoids(
+                self.k,
+                dist_func=self.distance_function,
+                max_iter=self.max_iter,
+                tol=self.tol,
+            )
+            clusters.fit(self.clustering_attributions, verbose=False)
+
+            self.subpopulations = clusters.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
+            self.explanations = self._get_explanations(clusters.centers)
+
         elif self.cluster_method == "parallel medoids":
-            clusters = KMedoids()
+            clusters = ParallelMedoids()
             n = clusters.fit(X=self.clustering_attributions, verbose=False)
 
             self.subpopulations = clusters.members
@@ -261,12 +286,14 @@ class GAM:
             pass
         elif self.cluster_method == "spectral clustering":
             pass
-        else:
+        else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
 
         # Use scoring method if one is provided at initialization
         if self.scoring_method:
             self.score = self.scoring_method(self)
+
+
 
 if __name__ == '__main__':
     local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
