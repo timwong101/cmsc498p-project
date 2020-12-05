@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from math import pi
 
+from sklearn.datasets import make_blobs
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 """
 # for testing purposes on RDD's
@@ -177,7 +180,7 @@ if __name__ == '__main__':
     for key, value in groupsDict.items():
         dfp.loc[value, 'medoid'] = key
 
-    graph = 'parallel'
+    graph = 'silhouette'
     # parallel plot of all points
     if graph == 'parallel':
         parallel_coordinates(dfp, class_column='medoid', colormap=get_cmap("Set1"))
@@ -235,3 +238,6 @@ if __name__ == '__main__':
         for row in range(len(medoidsList)):
             make_spider(row = row, title = medoidsList[row].index[0], color = my_palette(row))
         plt.show()
+    elif graph == 'silhouette':
+        print("to be implemented")
+
