@@ -141,8 +141,6 @@ class RankedMedoids:
                     maxHv = (simi, hv)
             newMedoids.add(maxHv[0])
 
-
-
     def fit(self, X=None, plotit=False, verbose=True):
         """
         Fits kmedoids with the option for plotting
@@ -169,20 +167,10 @@ class RankedMedoids:
                 )
         return n
 
-
-
-    def plotParralelAndRadar(self, clusters, data):
-        allData = []
-        for c in clusters:
-            clusterData = []
-            for index in c:
-                clusterData.append(data[index])
-            allData.append(clusterData)
-        parallel_coordinates(data, color=['g', 'm'])
-
-    def printNice(self, clusters, medoids):
+    # Print out the table nicely
+    def printNice(self, clusters):
         for i in range(len(clusters)):
-            print(medoids[i], ' ', clusters[i])
+            print(clusters[i])
 
     def testPrintTables(self, data):
         r, s = self.buildRankTable(data)
@@ -195,6 +183,7 @@ class RankedMedoids:
     def test2D(self):
         self.main(self.generate2dData())
 
+    # Cluster the data
     def cluster(self):
         df = pd.read_csv('mushroom-attributions-200-samples.csv')
         dataset = []
@@ -203,7 +192,7 @@ class RankedMedoids:
         medoids, clusters = self.main(dataset)
         return medoids, clusters, len(df)
 
-    # This method checks whether there exists some data points in different clusters
+    # This method checks whether there exists same data points in different clusters
     def checkClustersContainDifferent(self, clusters):
         for i in range(len(clusters)):
             for d in clusters[i]:
@@ -228,7 +217,6 @@ class RankedMedoids:
         pca = PCA(n_components=2)
         principalComponents = pca.fit_transform(x)
         principalDf = pd.DataFrame(data=principalComponents, columns=['principal component 1', 'principal component 2'])
-
         colors = ['blue', 'black', 'yellow', 'green', 'purple']
         plt.figure(figsize=(10, 8))
         plt.xlim(-3, 3)
@@ -243,6 +231,7 @@ class RankedMedoids:
         for i in clusters[4]:
             plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[4])
 
+    # Do the main job of clustering. Define values for k, m, numOfLoops. When looping, update medoids accordingly
     def main(self, data):
         n = len(data)
         numOfLoops = 100
@@ -254,7 +243,7 @@ class RankedMedoids:
             self.updateMedoids(k, m, n, medoids, similarityMetrix, rankTable)
         clusters, medoids = self.assignToClusters(k, n, medoids, rankTable)
 
-        # self.printNice(clusters, medoids)
+        self.printNice(clusters)
         # print(self.checkClustersContainDifferent(clusters))
         # self.plotParralelAndRadar(clusters, data)
         return medoids, clusters
@@ -267,4 +256,4 @@ if __name__ == '__main__':
     # test2D()
 
     rankedMedoids = RankedMedoids()
-    rankedMedoids.testMushroomDataset()
+    rankedMedoids.cluster()
