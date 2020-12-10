@@ -13,7 +13,7 @@ from gam_package.clustering import KMedoids
 from gam_package.kendall_tau_distance import mergeSortDistance
 from gam_package.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
-from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot
+from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
 
 logging.basicConfig(
@@ -287,6 +287,8 @@ class GAM:
             parallelPlot(dfp)
             radarPlot(dfp, mlist)
             facetedRadarPlot(dfp, mlist)
+            silhouetteAnalysis(dfp, mlist)
+
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids()
             n = clusters.fit(X=self.clustering_attributions, verbose=False)
