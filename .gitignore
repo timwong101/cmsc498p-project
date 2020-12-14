@@ -1,3 +1,7 @@
+spectral/data/*.dat
+spectral/data/*.h5
+spectral/data/*.qrels
+
 gam_package/__pycache__/
 venv/Lib/site-packages
 
