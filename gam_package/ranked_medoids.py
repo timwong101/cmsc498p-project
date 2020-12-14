@@ -18,7 +18,7 @@ class RankedMedoids:
 
     # Attain the original dataset for the analysis
     def getDataset(self):
-        data = pd.read_csv("mushroom-attributions-200-samples.csv")
+        data = pd.read_csv("data/mushroom-attributions-200-samples.csv")
         data = data[['odor', 'bruises']]  # Reduce dims of dataset in order to visualize
         dataset = []
         l = len(data)

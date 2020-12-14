@@ -1,6 +1,6 @@
-spectral/data/*.dat
-spectral/data/*.h5
-spectral/data/*.qrels
+spectral/data/reuters/*.dat
+spectral/data/reuters/*.h5
+spectral/data/reuters/*.qrels
 
 gam_package/__pycache__/
 venv/Lib/site-packages
