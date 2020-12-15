@@ -41,7 +41,7 @@ class GAM:
         self,
         k=2,
         attributions_path='data/mushroom-attributions-200-samples.csv',
-        cluster_method="parallel medoids",
+        cluster_method="ranked medoids",
         distance="euclidean",
         use_normalized=True,
         scoring_method=None,
