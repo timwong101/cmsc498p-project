@@ -17,6 +17,8 @@ from spectral_clustering.applications.spectralnet import run_net
 
 if __name__ == '__main__':
 
+    print("run2.py->main ==================================================================================================")
+
     # PARSE ARGUMENTS
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, help='gpu number to use', default='')

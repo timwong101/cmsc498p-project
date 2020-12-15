@@ -1,9 +1,8 @@
 '''
 train.py: contains all training and prediction backend functions for spectral net
 '''
-# from keras import backend as K
+from keras import backend as K
 from .util import make_batches
-import tensorflow.python.keras.backend as K
 
 import numpy as np
 
@@ -90,7 +89,12 @@ def train_step(return_var, updates, x_unlabeled, inputs, y_true,
                 raise Exception("Unrecognized feed name ['{}']".format(input_type))
 
         all_vars = return_var + updates
-        return_vars_ += np.asarray(K.get_session().run(all_vars, feed_dict=feed_dict)[:len(return_var)])
+        return_vars_ += np.asarray(
+            K.get_session()
+                .run(
+                all_vars,
+                feed_dict=feed_dict)[:len(return_var)])
+        # print('1')
 
     return return_vars_
 

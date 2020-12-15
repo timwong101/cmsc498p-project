@@ -6,18 +6,14 @@ triplet siamese net, and spectralnet)
 import numpy as np
 import tensorflow as tf
 
-# from keras import backend as K
-import tensorflow.python.keras.backend as K
-
-# from tensorflow.compat.v1.keras import backend as K
+from keras import backend as K
 from keras.models import Model
 from keras.layers import Input, Lambda, Subtract
 
-from spectral_clustering.core import train
-from spectral_clustering.core import costs
-from spectral_clustering.core.layer import stack_layers
-
-
+from . import train
+from . import costs
+from .layer import stack_layers
+from .util import LearningHandler, make_layer_list, train_gen, get_scale
 
 class SiameseNet:
     def __init__(self, inputs, arch, siam_reg, y_true):
@@ -33,7 +29,6 @@ class SiameseNet:
 
         # generate layers
         self.layers = []
-        from spectral_clustering.core.util import make_layer_list
         self.layers += make_layer_list(arch, 'siamese', siam_reg)
 
         # create the siamese net
@@ -50,7 +45,6 @@ class SiameseNet:
 
     def train(self, pairs_train, dist_train, pairs_val, dist_val,
             lr, drop, patience, num_epochs, batch_size):
-        from spectral_clustering.core.util import LearningHandler
         # create handler for early stopping and learning rate scheduling
         self.lh = LearningHandler(
                 lr=lr,
@@ -59,7 +53,6 @@ class SiameseNet:
                 patience=patience)
 
         # initialize the training generator
-        from spectral_clustering.core.util import train_gen
         train_gen_ = train_gen(pairs_train, dist_train, batch_size)
 
         # format the validation data for keras
@@ -86,7 +79,6 @@ class SpectralNet:
         self.inputs = inputs
         self.batch_sizes = batch_sizes
         # generate layers
-        from spectral_clustering.core.util import make_layer_list
         self.layers = make_layer_list(arch[:-1], 'spectral', spec_reg)
         self.layers += [
                   {'type': 'tanh',
@@ -111,7 +103,6 @@ class SpectralNet:
             x_affinity = x_train
 
         # calculate scale for affinity matrix
-        from spectral_clustering.core.util import get_scale
         scale = get_scale(x_affinity, self.batch_sizes['Unlabeled'], scale_nbr)
 
         # create affinity matrix
@@ -142,18 +133,14 @@ class SpectralNet:
 
         # create the train step update
         self.learning_rate = tf.Variable(0., name='spectral_net_learning_rate')
-        # self.train_step = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(self.loss, var_list=self.net.trainable_weights)
-        self.train_step = tf.compat.v1.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(self.loss, var_list=self.net.trainable_weights)
+        self.train_step = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(self.loss, var_list=self.net.trainable_weights)
 
         # initialize spectralnet variables
-        tf.compat.v1.disable_eager_execution()
-
         # K.get_session().run(tf.variables_initializer(self.net.trainable_weights))
-        K.get_session().run(tf.compat.v1.variables_initializer(self.net.trainable_weights))
+        K.get_session().run(tf.initialize_all_variables())
 
     def train(self, x_train_unlabeled, x_train_labeled, x_val_unlabeled,
             lr, drop, patience, num_epochs):
-        from spectral_clustering.core.util import LearningHandler
         # create handler for early stopping and learning rate scheduling
         self.lh = LearningHandler(
                 lr=lr,

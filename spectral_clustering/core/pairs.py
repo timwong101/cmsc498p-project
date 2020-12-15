@@ -17,8 +17,7 @@ from keras.models import Sequential, Model
 from keras.layers import Dense, Dropout, Input, Lambda, Flatten
 from keras.optimizers import RMSprop
 from keras import backend as K
-from sklearn.neighbors import NearestNeighbors
-from sklearn.neighbors import LSHForest
+from sklearn.neighbors import NearestNeighbors, LSHForest
 from keras.layers import Conv2D, MaxPooling2D
 from keras.callbacks import LearningRateScheduler
 

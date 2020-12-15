@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
 import argparse
 from collections import defaultdict
 
-from spectralnet.core.data import get_data
-from spectralnet.applications.spectralnet import run_net
+from spectral_clustering.core.data import get_data
+from spectralnet import run_net
 
 # PARSE ARGUMENTS
 parser = argparse.ArgumentParser()

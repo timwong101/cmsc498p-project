@@ -20,14 +20,11 @@ from spectral_clustering.core import train
 from spectral_clustering.core import costs
 from spectral_clustering.core import networks
 from spectral_clustering.core.layer import stack_layers
-
-# from spectral_clustering.core.util import get_scale
-# from spectral_clustering.core.util import LearningHandler
-# from spectral_clustering.core.util import make_layer_list
-# from spectral_clustering.core.util import train_gen
-
+from spectral_clustering.core.util import get_scale, print_accuracy, get_cluster_sols, LearningHandler, make_layer_list, train_gen, get_y_preds
 
 def run_net(data, params):
+    print("spectralnet.py->run_net(data, params) ==================================================================================================")
+
     #
     # UNPACK DATA
     #
@@ -52,8 +49,7 @@ def run_net(data, params):
     #
 
     # create true y placeholder (not used in unsupervised training)
-    tf.compat.v1.disable_eager_execution()
-    y_true = tf.compat.v1.placeholder(tf.float32, shape=(None, params['n_clusters']), name='y_true')
+    y_true = tf.placeholder(tf.float32, shape=(None, params['n_clusters']), name='y_true')
 
     batch_sizes = {
             'Unlabeled': params['batch_size'],
@@ -109,11 +105,8 @@ def run_net(data, params):
     x_spectralnet = spectral_net.predict(x)
 
     # get accuracy and nmi
-    from spectral_clustering.core.util import get_cluster_sols
     kmeans_assignments, km = get_cluster_sols(x_spectralnet, ClusterClass=KMeans, n_clusters=params['n_clusters'], init_args={'n_init':10})
-    from spectral_clustering.core.util import get_y_preds
     y_spectralnet, _ = get_y_preds(kmeans_assignments, y, params['n_clusters'])
-    from spectral_clustering.core.util import print_accuracy
     print_accuracy(kmeans_assignments, y, params['n_clusters'])
     from sklearn.metrics import normalized_mutual_info_score as nmi
     nmi_score = nmi(kmeans_assignments, y)
