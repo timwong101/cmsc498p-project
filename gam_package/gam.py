@@ -15,6 +15,7 @@ from gam_package.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
+from gam_package.ucb_pam import BanditPAM
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
@@ -41,7 +42,7 @@ class GAM:
         self,
         k=2,
         attributions_path='data/mushroom-attributions-200-samples.csv',
-        cluster_method="ranked medoids",
+        cluster_method="banditPAM",
         distance="euclidean",
         use_normalized=True,
         scoring_method=None,
@@ -301,6 +302,18 @@ class GAM:
             #facetedRadarPlot(dfp, mlist)
         elif self.cluster_method == "spectral clustering":
             pass
+        elif self.cluster_method == "banditPAM":
+            banditPAM = BanditPAM()
+            n, imgs, feature_labels = banditPAM.fit(X=self.clustering_attributions, verbose=False)
+
+            self.clustering_attributions = imgs
+            self.attributions = imgs
+            self.feature_labels = feature_labels
+            #self.feature_labels = range(1, len(imgs[0]+1))
+
+            self.subpopulations = banditPAM.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, banditPAM.members)
+            self.explanations = self._get_explanations(banditPAM.centers)
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
 
