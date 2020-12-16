@@ -1,2 +1,4 @@
 gam_package/__pycache__/
 venv/Lib/site-packages/
+/gam_package/data/pancan.csv
+.DS_STORE

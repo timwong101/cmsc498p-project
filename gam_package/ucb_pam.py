@@ -71,12 +71,13 @@ class BanditPAM:
 
             return trees, None, 0.0
         elif args.dataset == 'mushrooms':
-            file = 'data/mushroom-attributions-200-samples.csv'
+            file = self.data
             self.total_images = np.genfromtxt(file, dtype=float, delimiter=",", skip_header=1)
             with open(file) as attribution_file:
                 self.feature_labels = next(csv.reader(attribution_file))
             sigma = 0.01
             return self.total_images, self.feature_labels, sigma
+
         else:
             raise Exception("Didn't specify a valid dataset")
 
@@ -845,10 +846,11 @@ class BanditPAM:
         return self.centers, self.members, N, imgs, self.feature_labels
 
 
-    def fit(self, X = None, plotit=False, verbose=True):
+    def fit(self, X = None, plotit=False, verbose=True, data = ''):
         """
         Fits kmedoids with the option for plotting
         """
+        self.data = data
         start = default_timer()
         _,_, n, imgs, feature_labels = self._cluster()
         duration = default_timer() - start

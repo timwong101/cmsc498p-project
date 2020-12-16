@@ -124,12 +124,12 @@ class ParallelMedoids:
         newMedoid = patternsInClusters.iloc[minIndex].to_frame().transpose()
         return newMedoid
 
-    def fit(self, X = None, plotit=False, verbose=True):
+    def fit(self, X = None, plotit=False, verbose=True, data = ''):
         """
         Fits kmedoids with the option for plotting
         """
         start = default_timer()
-        _,_, n, dfp, mlist = self._cluster()
+        _,_, n, dfp, mlist = self._cluster(data)
         duration = default_timer() - start
 
         if plotit:
@@ -151,21 +151,19 @@ class ParallelMedoids:
                 )
         return n, dfp, mlist, duration
 
-    def _cluster(self):
+    def _cluster(self, data):
         sc = SparkContext()
         sc.setLogLevel("OFF")
         sqlContext = SQLContext(sc)
 
         # sets up the initial df and initializes variables
-        df = sqlContext.read.format('com.databricks.spark.csv').options(header='true', inferschema='true').load(
-                                    "data/mushroom-attributions-200-samples.csv")
+        df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(data)
         max_iter = 10; k = 3; sumOfDistances1 = float("inf")
-
+        df = df.na.drop()
         # set medoids equal to the initial medoids
         medoids = self.initialSeeds(df, k)
         global nearestClustersGlobal
         dfp = df.toPandas()
-
         # updates medoids until criteria is reached or the maximum number of iterations is reached
         for iter in range(0, max_iter):
             previousMedoids = copy.deepcopy(medoids)

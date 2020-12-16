@@ -17,6 +17,7 @@ from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
 from gam_package.ucb_pam import BanditPAM
+import urllib.request as urllib
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
@@ -43,7 +44,7 @@ class GAM:
         self,
         k=2,
         attributions_path='data/mushroom-attributions-200-samples.csv',
-        cluster_method="banditPAM",
+        cluster_method="parallel medoids",
         distance="euclidean",
         use_normalized=True,
         scoring_method=None,
@@ -109,7 +110,12 @@ class GAM:
             attributions (numpy.ndarray): for example, [(.2, .8), (.1, .9)]
             feature labels (tuple of labels): ("height", "weight")
         """
-
+        """
+        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data"
+        raw_data = urllib.urlopen(url)
+        with open('csv_file.csv', 'wb') as file:
+            file.write(raw_data.read())
+        """
         # use numpy to process data from csv file, the header labels are discarded
         self.attributions = np.genfromtxt(
             self.attributions_path, dtype=float, delimiter=",", skip_header=1
@@ -281,7 +287,7 @@ class GAM:
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
-            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False)
+            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False, data=self.attributions_path)
             self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
@@ -294,7 +300,7 @@ class GAM:
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids()
 
-            n, duration = clusters.fit(X=self.clustering_attributions, verbose=False)
+            n, duration = clusters.fit(X=self.clustering_attributions, verbose=False, data = self.attributions_path)
             self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
@@ -306,7 +312,7 @@ class GAM:
             pass
         elif self.cluster_method == "banditPAM":
             banditPAM = BanditPAM()
-            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False)
+            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False, data = self.attributions_path)
             self.duration = duration
 
             self.clustering_attributions = imgs
@@ -327,8 +333,9 @@ class GAM:
 
 
 if __name__ == '__main__':
-    local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    g = GAM(attributions_path = local_attribution_path, k=3) # initialize GAM with filename, k=number of clusters
+    #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
+    local_attribution_path = 'data/mushroom-attributions-200-samples.csv'
+    g = GAM(attributions_path = local_attribution_path, k=3, cluster_method='parallel medoids') # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

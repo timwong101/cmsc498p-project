@@ -19,7 +19,7 @@ class RankedMedoids:
 
     # Attain the original dataset for the analysis
     def getDataset(self):
-        data = pd.read_csv("data/mushroom-attributions-200-samples.csv")
+        data = pd.read_csv(self.data)
         data = data[['odor', 'bruises']]  # Reduce dims of dataset in order to visualize
         dataset = []
         l = len(data)
@@ -141,10 +141,11 @@ class RankedMedoids:
                     maxHv = (simi, hv)
             newMedoids.add(maxHv[0])
 
-    def fit(self, X=None, plotit=False, verbose=True):
+    def fit(self, X=None, plotit=False, verbose=True, data = ''):
         """
         Fits kmedoids with the option for plotting
         """
+        self.data = data
         start = default_timer()
         medoids, clusters, n = self.cluster()
         duration = default_timer() - start
@@ -187,7 +188,7 @@ class RankedMedoids:
 
     # Cluster the data
     def cluster(self):
-        df = pd.read_csv('data/mushroom-attributions-200-samples.csv')
+        df = pd.read_csv(self.data)
         dataset = []
         for i in range(len(df)):
             dataset.append(df.loc[i])
