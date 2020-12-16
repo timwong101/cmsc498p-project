@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from timeit import default_timer
 
 
 class RankedMedoids:
@@ -18,7 +19,7 @@ class RankedMedoids:
 
     # Attain the original dataset for the analysis
     def getDataset(self):
-        data = pd.read_csv("mushroom-attributions-200-samples.csv")
+        data = pd.read_csv("data/mushroom-attributions-200-samples.csv")
         data = data[['odor', 'bruises']]  # Reduce dims of dataset in order to visualize
         dataset = []
         l = len(data)
@@ -144,7 +145,9 @@ class RankedMedoids:
         """
         Fits kmedoids with the option for plotting
         """
+        start = default_timer()
         medoids, clusters, n = self.cluster()
+        duration = default_timer() - start
         self.centers = medoids
         self.members = clusters
         if plotit:
@@ -164,7 +167,7 @@ class RankedMedoids:
                     s=250,
                     marker="*",
                 )
-        return n
+        return n, duration
 
     # Print out the table nicely
     def printNice(self, clusters):

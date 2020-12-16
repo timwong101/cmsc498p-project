@@ -8,6 +8,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 from sklearn.metrics import pairwise_distances, silhouette_score
+from timeit import default_timer
 
 from gam_package.clustering import KMedoids
 from gam_package.kendall_tau_distance import mergeSortDistance
@@ -280,8 +281,8 @@ class GAM:
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
-            n, dfp, mlist = clusters.fit(X=self.clustering_attributions, verbose=False)
-
+            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False)
+            self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
@@ -292,8 +293,9 @@ class GAM:
 
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids()
-            n = clusters.fit(X=self.clustering_attributions, verbose=False)
 
+            n, duration = clusters.fit(X=self.clustering_attributions, verbose=False)
+            self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
@@ -304,7 +306,8 @@ class GAM:
             pass
         elif self.cluster_method == "banditPAM":
             banditPAM = BanditPAM()
-            n, imgs, feature_labels = banditPAM.fit(X=self.clustering_attributions, verbose=False)
+            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False)
+            self.duration = duration
 
             self.clustering_attributions = imgs
             self.attributions = imgs

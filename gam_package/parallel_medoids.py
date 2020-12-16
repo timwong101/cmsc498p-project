@@ -7,6 +7,7 @@ from scipy.spatial.distance import pdist, squareform
 import copy
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+from timeit import default_timer
 
 class ParallelMedoids:
     """
@@ -127,7 +128,9 @@ class ParallelMedoids:
         """
         Fits kmedoids with the option for plotting
         """
+        start = default_timer()
         _,_, n, dfp, mlist = self._cluster()
+        duration = default_timer() - start
 
         if plotit:
             _, ax = plt.subplots(1, 1)
@@ -146,7 +149,7 @@ class ParallelMedoids:
                     s=250,
                     marker="*",
                 )
-        return n, dfp, mlist
+        return n, dfp, mlist, duration
 
     def _cluster(self):
         sc = SparkContext()
