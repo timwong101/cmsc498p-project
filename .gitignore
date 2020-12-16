@@ -106,3 +106,20 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+gam_package/__pycache__/parallel_medoids.cpython-37.pyc
+gam_package/__pycache__/plot.cpython-37.pyc
+gam_package/__pycache__/*
+gam_package/.__pycache__/
+
+*.log
+
+*.pot
+
+*.pyc
+
+*/*/*/__pycache__/
+
+*/*/__pycache__/
+
+*/__pycache__/
