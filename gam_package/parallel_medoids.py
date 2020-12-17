@@ -222,6 +222,7 @@ class ParallelMedoids:
         for medoid, members in groupsDict.items():
             self.centers.append(medoid)
             self.members.append(members)
+
         return self.centers, self.members, len(dfp), dfp, medoidsList
 
 if __name__ == '__main__':
