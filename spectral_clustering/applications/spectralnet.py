@@ -50,6 +50,7 @@ def run_net(data, params):
 
     # create true y placeholder (not used in unsupervised training)
     y_true = tf.placeholder(tf.float32, shape=(None, params['n_clusters']), name='y_true')
+    # y_true = tf.compat.v1.placeholder(tf.float32, shape=(None, params['n_clusters']), name='y_true')
 
     batch_sizes = {
             'Unlabeled': params['batch_size'],
@@ -108,6 +109,7 @@ def run_net(data, params):
     kmeans_assignments, km = get_cluster_sols(x_spectralnet, ClusterClass=KMeans, n_clusters=params['n_clusters'], init_args={'n_init':10})
     y_spectralnet, _ = get_y_preds(kmeans_assignments, y, params['n_clusters'])
     print_accuracy(kmeans_assignments, y, params['n_clusters'])
+
     from sklearn.metrics import normalized_mutual_info_score as nmi
     nmi_score = nmi(kmeans_assignments, y)
     print('NMI: ' + str(np.round(nmi_score, 3)))

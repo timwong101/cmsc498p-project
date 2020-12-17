@@ -125,3 +125,5 @@ gam_package/.__pycache__/
 */__pycache__/
 
 #git rm -rf --cached .
+
+*/data/reuters/*.h5

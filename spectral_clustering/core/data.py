@@ -15,6 +15,8 @@ from keras.models import model_from_json
 from spectral_clustering.core import pairs
 
 def get_data(params, data=None):
+    print("data.py->get_data(params, data=None) ==================================================================================================")
+
     '''
     Convenience function: preprocesses all data in the manner specified in params, and returns it
     as a nested dict with the following keys:
@@ -164,6 +166,8 @@ def get_data(params, data=None):
     return ret
 
 def load_data(params):
+    print("data.py->load_data(params) ==================================================================================================")
+
     '''
     Convenience function: reads from disk, downloads, or generates the data specified in params
     '''
@@ -186,6 +190,8 @@ def load_data(params):
     return x_train, x_test, y_train, y_test
 
 def embed_data(x, dset):
+    print("data.py->embed_data(x, dset) ==================================================================================================")
+
     '''
     Convenience function: embeds x into the code space using the corresponding
     autoencoder (specified by dset).
@@ -219,6 +225,8 @@ def embed_data(x, dset):
     return x_embedded
 
 def predict_with_K_fn(K_fn, x, bs=1000):
+    print("data.py->predict_with_K_fn(K_fn, x, bs=1000) ==================================================================================================")
+
     '''
     Convenience function: evaluates x by K_fn(x), where K_fn is
     a Keras function, by batches of size 1000.
@@ -239,6 +247,8 @@ def predict_with_K_fn(K_fn, x, bs=1000):
     return y
 
 def split_data(x, y, split, permute=None):
+    print("data.py->split_data(x, y, split, permute=None) ==================================================================================================")
+
     '''
     Splits arrays x and y, of dimensionality n x d1 and n x d2, into
     k pairs of arrays (x1, y1), (x2, y2), ..., (xk, yk), where both
@@ -286,6 +296,8 @@ def split_data(x, y, split, permute=None):
     return tuple(ret_x_y_p)
 
 def generate_cc(n=1200, noise_sigma=0.1, train_set_fraction=1.):
+    print("data.py->generate_cc(n=1200, noise_sigma=0.1, train_set_fraction=1.) ==================================================================================================")
+
     '''
     Generates and returns the nested 'C' example dataset (as seen in the leftmost
     graph in Fig. 1)
@@ -326,6 +338,8 @@ def generate_cc(n=1200, noise_sigma=0.1, train_set_fraction=1.):
     return x_train, x_test, y_train, y_test
 
 def get_mnist():
+    print("data.py->get_mnist() ==================================================================================================")
+
     '''
     Returns the train and test splits of the MNIST digits dataset,
     where x_train and x_test are shaped into the tensorflow image data
@@ -338,6 +352,8 @@ def get_mnist():
     return x_train, x_test, y_train, y_test
 
 def pre_process(x_train, x_test, standardize):
+    print("data.py->pre_process(x_train, x_test, standardize) ==================================================================================================")
+
     '''
     Convenience function: uses the sklearn StandardScaler on x_train
     and x_test if standardize == True
