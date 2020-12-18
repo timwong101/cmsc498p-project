@@ -56,35 +56,6 @@ class RankedMedoids:
             data.append([xs[i], ys[i]])
         return data
 
-    # Compute distance between each pair of data points
-    # data: the actual data we use for this algorithm, it is a collection of data points, each point has dimension dims
-    def computeDistance(self, i, j, data):
-        # print("RankedMedoids.computeDistance(i, j, data)")
-
-        # from gam_package.kendall_tau_distance import mergeSortDistance
-        # from gam_package.spearman_distance import spearman_squared_distance
-
-        number_of_features = len(data[0])
-        distance = 0
-
-        if self.dist_func_type == "euclidean":
-            for x in range(number_of_features):
-                distance += (data[i][x] - data[j][x]) ** 2
-            return distance ** .5
-        elif self.dist_func_type == "spearman":
-            for x in range(number_of_features):
-                distance += spearman_squared_distance(data[i][x], data[j][x])
-            return distance
-        elif self.dist_func_type == "kendall":
-            for x in range(number_of_features):
-                distance += mergeSortDistance(data[i][x], data[j][x])
-            return distance
-        # else:
-        #     self.dist_func = (
-        #         dist_func
-        #     )  # assume this is metric listed in pairwise.PAIRWISE_DISTANCE_FUNCTIONS
-
-
 
     # Build Rank and Similarity tables. This function produces the crucial tables this algorithm requires
     def buildRankTable(self, data):
@@ -99,7 +70,7 @@ class RankedMedoids:
         # Compute the distance and record them in a tuple
         for i in range(n):
             for j in range(i, n):
-                d = self.computeDistance(i, j, data)
+                d = self.dist_func(data[i], data[j])
                 rank[i][j] = (d, j)
                 rank[j][i] = (d, i)
 

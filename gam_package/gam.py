@@ -10,6 +10,8 @@ import pandas as pd
 from gam_package.clustering import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
+from gam_package.distance_functions.euclidean_distance import euclidean_distance
+
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
@@ -54,7 +56,7 @@ class GAM:
         self.dist_func_type = dist_func_type
         # string specifying appropriate dissimilarity metric
         if self.dist_func_type == "euclidean":
-            self.dist_func = self.euclidean_distance
+            self.dist_func = euclidean_distance
         elif self.dist_func_type == "spearman":
             self.dist_func = spearman_squared_distance
         elif self.dist_func_type == "kendall":
@@ -79,10 +81,6 @@ class GAM:
         self.subpopulation_sizes = None
         self.explanations = None
         self.score = None
-
-    def euclidean_distance(self, data1, data2):
-        """example distance function"""
-        return np.sqrt(np.sum((data1 - data2) ** 2))
 
     @staticmethod
     def normalize(attributions):
@@ -296,7 +294,7 @@ class GAM:
             silhouetteAnalysis(dfp, mlist)
 
         elif self.cluster_method == "ranked medoids":
-            clusters = RankedMedoids(dist_func_type=self.dist_func_type)
+            clusters = RankedMedoids(dist_func_type=self.dist_func_type, dist_func=euclidean_distance)
 
             n, duration = clusters.fit(X=self.clustering_attributions, verbose=False, attributions_path = self.attributions_path)
             self.duration = duration
