@@ -331,7 +331,6 @@ class GAM:
             self.score = self.scoring_method(self)
 
 
-
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
     local_attribution_path = 'data/mushroom-attributions-200-samples.csv'

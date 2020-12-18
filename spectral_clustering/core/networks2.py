@@ -2,6 +2,7 @@
 networks.py: contains network definitions (for siamese net,
 triplet siamese net, and spectralnet)
 '''
+from timeit import default_timer
 
 import numpy as np
 import tensorflow as tf
@@ -10,7 +11,7 @@ from keras import backend as K
 from keras.models import Model
 from keras.layers import Input, Lambda, Subtract
 
-from . import train
+from . import train2
 from . import costs
 from .layer import stack_layers
 from .util import LearningHandler, make_layer_list, train_gen, get_scale
@@ -68,12 +69,14 @@ class SiameseNet:
 
     def predict(self, x, batch_sizes):
         # compute the siamese embeddings of the input data
-        return train.predict(self.outputs['A'], x_unlabeled=x, inputs=self.orig_inputs, y_true=self.y_true, batch_sizes=batch_sizes)
+        return train2.predict(self.outputs['A'], x_unlabeled=x, inputs=self.orig_inputs, y_true=self.y_true, batch_sizes=batch_sizes)
 
 class SpectralNet:
-    def __init__(self, inputs, arch, spec_reg, y_true, y_train_labeled_onehot,
-            n_clusters, affinity, scale_nbr, n_nbrs, batch_sizes,
-            siamese_net=None, x_train=None, have_labeled=False):
+    def __init__(self, inputs=None, arch=None, spec_reg=None, y_true=None, y_train_labeled_onehot=None,
+            n_clusters=None, affinity=None, scale_nbr=None, n_nbrs=None, batch_sizes=None,
+            siamese_net=None, x_train=None, have_labeled=False, isUnsupervised=False):
+
+        self.n_clusters = n_clusters
         self.y_true = y_true
         self.y_train_labeled_onehot = y_train_labeled_onehot
         self.inputs = inputs
@@ -98,6 +101,9 @@ class SpectralNet:
         if affinity == 'siamese':
             input_affinity = tf.concat([siamese_net.outputs['A'], siamese_net.outputs['Labeled']], axis=0)
             x_affinity = siamese_net.predict(x_train, batch_sizes)
+        elif affinity in ['knn', 'full'] and isUnsupervised:
+            input_affinity = self.inputs['Unlabeled']
+            x_affinity = x_train
         elif affinity in ['knn', 'full']:
             input_affinity = tf.concat([self.inputs['Unlabeled'], self.inputs['Labeled']], axis=0)
             x_affinity = x_train
@@ -136,10 +142,11 @@ class SpectralNet:
         self.train_step = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(self.loss, var_list=self.net.trainable_weights)
 
         # initialize spectralnet variables
-        K.get_session().run(tf.variables_initializer(self.net.trainable_weights))
+        # K.get_session().run(tf.variables_initializer(self.net.trainable_weights))
+        K.get_session().run(tf.initialize_all_variables())
 
-    def train(self, x_train_unlabeled, x_train_labeled, x_val_unlabeled,
-            lr, drop, patience, num_epochs):
+    def train(self, x_train_unlabeled=None, x_train_labeled=None, x_val_unlabeled=None,
+            lr=None, drop=None, patience=None, num_epochs=None, isUnsupervised=False):
         # create handler for early stopping and learning rate scheduling
         self.lh = LearningHandler(
                 lr=lr,
@@ -153,8 +160,13 @@ class SpectralNet:
         # begin spectralnet training loop
         self.lh.on_train_begin()
         for i in range(num_epochs):
+
+            # train_step(return_var=None, updates=None, x_unlabeled=None, inputs=None, y_true=None,
+            #            batch_sizes=None, x_labeled=None, y_labeled=None,
+            #            batches_per_epoch=100):
+
             # train spectralnet
-            losses[i] = train.train_step(
+            losses[i] = train2.train_step(
                     return_var=[self.loss],
                     updates=self.net.updates + [self.train_step],
                     x_unlabeled=x_train_unlabeled,
@@ -163,17 +175,22 @@ class SpectralNet:
                     batch_sizes=self.batch_sizes,
                     x_labeled=x_train_labeled,
                     y_labeled=self.y_train_labeled_onehot,
-                    batches_per_epoch=100)[0]
+                    batches_per_epoch=100, isUnsupervised=isUnsupervised)[0]
 
-            # get validation loss
-            val_losses[i] = train.predict_sum(
-                    self.loss,
-                    x_unlabeled=x_val_unlabeled,
-                    inputs=self.inputs,
-                    y_true=self.y_true,
-                    x_labeled=x_train_unlabeled[0:0],
-                    y_labeled=self.y_train_labeled_onehot,
-                    batch_sizes=self.batch_sizes)
+            print("i: ", i, "loss: ", losses[i])
+
+            if isUnsupervised:
+                val_losses[i] = 0.01
+            else:
+                # get validation loss
+                val_losses[i] = train2.predict_sum(
+                        self.loss,
+                        x_unlabeled=x_val_unlabeled,
+                        inputs=self.inputs,
+                        y_true=self.y_true,
+                        x_labeled=x_train_unlabeled[0:0],
+                        y_labeled=self.y_train_labeled_onehot,
+                        batch_sizes=self.batch_sizes, isUnsupervised=isUnsupervised)
 
             # do early stopping if necessary
             if self.lh.on_epoch_end(i, val_losses[i]):
@@ -185,10 +202,41 @@ class SpectralNet:
 
         return losses[:i], val_losses[:i]
 
+    def fit(self, X = None, plotit=False, verbose=True, data = ''):
+        """
+        Fits kmedoids with the option for plotting
+        """
+        start = default_timer()
+        predictions = self.predict(X)
+        duration = default_timer() - start
+
+        if plotit:
+            import matplotlib.pyplot as plt
+            _, ax = plt.subplots(1, 1)
+            colors = ["b", "g", "r", "c", "m", "y", "k"]
+            if self.k > len(colors):
+                raise ValueError("we need more colors")
+
+            for i in range(len(self.centers)):
+                X_c = X[self.members == i, :]
+                ax.scatter(X_c[:, 0], X_c[:, 1], c=colors[i], alpha=0.5, s=30)
+                ax.scatter(
+                    X[self.centers[i], 0],
+                    X[self.centers[i], 1],
+                    c=colors[i],
+                    alpha=1.0,
+                    s=250,
+                    marker="*",
+                )
+
+
+        return n, dfp, mlist, duration
+
+
     def predict(self, x):
         # test inputs do not require the 'Labeled' input
         inputs_test = {'Unlabeled': self.inputs['Unlabeled'], 'Orthonorm': self.inputs['Orthonorm']}
-        return train.predict(
+        return train2.predict(
                     self.outputs['Unlabeled'],
                     x_unlabeled=x,
                     inputs=inputs_test,

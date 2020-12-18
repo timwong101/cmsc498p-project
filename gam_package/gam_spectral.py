@@ -34,9 +34,9 @@ from keras.models import Model, load_model
 from keras.layers import Input, Lambda
 from keras.optimizers import RMSprop
 
-from spectral_clustering.core import train
+from spectral_clustering.core import train2
 from spectral_clustering.core import costs
-from spectral_clustering.core import networks
+from spectral_clustering.core import networks2
 from spectral_clustering.core.layer import stack_layers
 from spectral_clustering.core.util import get_scale, print_accuracy, get_cluster_sols, LearningHandler, make_layer_list, train_gen, get_y_preds
 
@@ -400,10 +400,10 @@ class GAM:
             # __init__(self, inputs=None, arch=None, spec_reg=None, y_true=None, y_train_labeled_onehot=None,
             #          n_clusters=None, affinity=None, scale_nbr=None, n_nbrs=None, batch_sizes=None,
             #          siamese_net=None, x_train=None, have_labeled=False)
-            spectral_net = networks.SpectralNet(inputs=inputs, arch=params['arch'],
-                                                spec_reg=params.get('spec_reg'),
-                                                n_clusters=params['n_clusters'], affinity=params['affinity'], scale_nbr=params['scale_nbr'],
-                                                n_nbrs=params['n_nbrs'], batch_sizes=batch_sizes, x_train=self.clustering_attributions, isUnsupervised=params['isCustomData'])
+            spectral_net = networks2.SpectralNet(inputs=inputs, arch=params['arch'],
+                                                 spec_reg=params.get('spec_reg'),
+                                                 n_clusters=params['n_clusters'], affinity=params['affinity'], scale_nbr=params['scale_nbr'],
+                                                 n_nbrs=params['n_nbrs'], batch_sizes=batch_sizes, x_train=self.clustering_attributions, isUnsupervised=params['isCustomData'])
 
             x_train_unlabeled = self.clustering_attributions
             x = self.clustering_attributions

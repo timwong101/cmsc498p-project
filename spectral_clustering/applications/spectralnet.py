@@ -16,9 +16,9 @@ from keras.models import Model, load_model
 from keras.layers import Input, Lambda
 from keras.optimizers import RMSprop
 
-from spectral_clustering.core import train
+from spectral_clustering.core import train2
 from spectral_clustering.core import costs
-from spectral_clustering.core import networks
+from spectral_clustering.core import networks2
 from spectral_clustering.core.layer import stack_layers
 from spectral_clustering.core.util import get_scale, print_accuracy, get_cluster_sols, LearningHandler, make_layer_list, train_gen, get_y_preds
 
@@ -73,7 +73,7 @@ def run_net(data, params):
 
     # run only if we are using a siamese network
     if params['affinity'] == 'siamese':
-        siamese_net = networks.SiameseNet(inputs, params['arch'], params.get('siam_reg'), y_true)
+        siamese_net = networks2.SiameseNet(inputs, params['arch'], params.get('siam_reg'), y_true)
 
         history = siamese_net.train(pairs_train, dist_train, pairs_val, dist_val,
                 params['siam_lr'], params['siam_drop'], params['siam_patience'],
@@ -86,10 +86,10 @@ def run_net(data, params):
     # DEFINE AND TRAIN SPECTRALNET
     #
 
-    spectral_net = networks.SpectralNet(inputs, params['arch'],
-            params.get('spec_reg'), y_true, y_train_labeled_onehot,
-            params['n_clusters'], params['affinity'], params['scale_nbr'],
-            params['n_nbrs'], batch_sizes, siamese_net, x_train, len(x_train_labeled))
+    spectral_net = networks2.SpectralNet(inputs, params['arch'],
+                                         params.get('spec_reg'), y_true, y_train_labeled_onehot,
+                                         params['n_clusters'], params['affinity'], params['scale_nbr'],
+                                         params['n_nbrs'], batch_sizes, siamese_net, x_train, len(x_train_labeled))
 
     spectral_net.train(
             x_train_unlabeled, x_train_labeled, x_val_unlabeled,
