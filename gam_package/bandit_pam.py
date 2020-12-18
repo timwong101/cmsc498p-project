@@ -20,7 +20,7 @@ class BanditPAM:
 
     def __init__(self, n_clusters=1, max_iter=1000, tol=0.0001,
                  f="mushroom-attributions-200-samples.csv"):
-        self.filename = f
+        self.cluster_attributions = f
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.tol = tol
@@ -415,7 +415,7 @@ class BanditPAM:
 
     # TODO: Explicitly pass metric instead of args.metric here
     def medoid_swap(self, medoids, best_swap, imgs, loss, args, dist_mat=None):
-        print("data_utils -> medoid_swap")
+        print("\nmedoid_swap")
         '''
         Swaps the medoid-nonmedoid pair in best_swap if it would lower the loss on
         the datapoints in imgs. Returns a string describing whether the swap was
@@ -429,15 +429,18 @@ class BanditPAM:
         new_medoids = medoids.copy()
         new_medoids.remove(orig_medoid)
         new_medoids.append(new_medoid)
-        new_best_distances, new_closest_medoids = self.get_best_distances(new_medoids, imgs, metric=args.metric,
+        new_best_distances, new_closest_medoids = self.get_best_distances(new_medoids, imgs,
+                                                                          metric=args.metric,
                                                                      dist_mat=dist_mat)
         new_loss = np.mean(new_best_distances)
         performed_or_not = ''
         if new_loss < loss:
             performed_or_not = "SWAP PERFORMED"
+            print("SWAP PERFORMED")
             swap_performed = True
         else:
             performed_or_not = "NO SWAP PERFORMED"
+            print("NO SWAP PERFORMED")
             new_medoids = medoids
 
         if args.verbose >= 1:
@@ -789,8 +792,8 @@ class BanditPAM:
 
         return medoids, S_logstring, iter, loss
 
-    def UCB_build_and_swap(self, args):
-        print("ucb_pam -> UCB_build_and_swap")
+    def build_and_swap(self, args):
+        print("ucb_pam -> build_and_swap")
         '''
         Run the entire BanditPAM algorithm, both the BUILD step and the SWAP step
         '''
@@ -841,7 +844,7 @@ class BanditPAM:
 
         uniq_d = np.sum(args.cache_computed)
         #return built_medoids, swapped_medoids, B_logstring, S_logstring, num_swaps, final_loss, uniq_d
-        _, closest_medoids = self.get_best_distances(swapped_medoids, imgs, metric=args.metric, dist_mat=dist_mat)
+        best_distances, closest_medoids = self.get_best_distances(swapped_medoids, imgs, metric=args.metric, dist_mat=dist_mat)
         groupsDict = {}
         for i in range(len(swapped_medoids)):
             groupsDict[swapped_medoids[i]] = [j for j, x in enumerate(closest_medoids) if x == swapped_medoids[i]]
@@ -854,7 +857,7 @@ class BanditPAM:
         return self.centers, self.members, N, imgs, self.feature_labels
 
 
-    def fit(self, X = None, plotit=False, verbose=True, attributions_path = ''):
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = 'data/mushrooms.csv'):
         """
         Fits kmedoids with the option for plotting
         """
@@ -913,5 +916,10 @@ class BanditPAM:
         return args
 
     def _cluster(self):
-        args = self.setArguments("wine")
-        return self.UCB_build_and_swap(args)
+        args = self.setArguments("mushrooms")
+        return self.build_and_swap(args)
+
+if __name__ == '__main__':
+
+    rankedMedoids = BanditPAM()
+    rankedMedoids.fit()
