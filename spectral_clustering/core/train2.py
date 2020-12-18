@@ -6,12 +6,15 @@ from .util import make_batches
 
 import numpy as np
 
-def check_inputs(x_unlabeled, x_labeled, y_labeled, y_true):
+def check_inputs(x_unlabeled, x_labeled=None, y_labeled=None, y_true=None, isUnsupervised=False):
     '''
-    Checks the data inputs to both train_step and predict and creates
-    empty arrays if necessary
+    Checks the data inputs to both train_step and predict and creates empty arrays if necessary
     '''
-    if x_unlabeled is None:
+    if isUnsupervised:
+        x_labeled = x_unlabeled[0:0]
+        return x_unlabeled, None, None
+    elif x_unlabeled is None:
+    # if x_unlabeled is None:
         if x_labeled is None:
             raise Exception("No data, labeled or unlabeled, passed to check_inputs!")
         x_unlabeled = x_labeled[0:0]
@@ -25,9 +28,9 @@ def check_inputs(x_unlabeled, x_labeled, y_labeled, y_true):
         raise Exception("x_labeled and y_labeled must both be None or have a value")
     return x_unlabeled, x_labeled, y_labeled
 
-def train_step(return_var, updates, x_unlabeled, inputs, y_true,
-        batch_sizes, x_labeled=None, y_labeled=None,
-        batches_per_epoch=100):
+def train_step(return_var=None, updates=None, x_unlabeled=None, inputs=None, y_true=None,
+        batch_sizes=None, x_labeled=None, y_labeled=None,
+        batches_per_epoch=100, isUnsupervised=False):
     '''
     Performs one training step. Evaluates the tensors in return_var and
     updates, then returns the values of the tensors in return_var.
@@ -51,13 +54,15 @@ def train_step(return_var, updates, x_unlabeled, inputs, y_true,
            refer to one iteration over the entire dataset. instead, it
            is just batches_per_epoch parameter updates.
     '''
-    x_unlabeled, x_labeled, y_labeled = check_inputs(x_unlabeled, x_labeled, y_labeled, y_true)
+    x_unlabeled, x_labeled, y_labeled = check_inputs(x_unlabeled, x_labeled, y_labeled, y_true, isUnsupervised=isUnsupervised)
 
     # combine data
-    x = np.concatenate((x_unlabeled, x_labeled), 0)
-
-    # get shape of y_true
-    y_shape = y_true.get_shape()[1:K.ndim(y_true)].as_list()
+    if x_labeled is not None:
+        x = np.concatenate((x_unlabeled, x_labeled), 0)
+        # get shape of y_true
+        y_shape = y_true.get_shape()[1:K.ndim(y_true)].as_list()
+    else:
+        x = x_unlabeled
 
     return_vars_ = np.zeros(shape=(len(return_var)))
     # train batches_per_epoch batches
@@ -89,12 +94,17 @@ def train_step(return_var, updates, x_unlabeled, inputs, y_true,
                 raise Exception("Unrecognized feed name ['{}']".format(input_type))
 
         all_vars = return_var + updates
-        return_vars_ += np.asarray(K.get_session().run(all_vars, feed_dict=feed_dict)[:len(return_var)])
+        return_vars_ += np.asarray(
+            K.get_session()
+                .run(
+                all_vars,
+                feed_dict=feed_dict)[:len(return_var)])
+        # print('1')
 
     return return_vars_
 
 def predict(predict_var, x_unlabeled, inputs, y_true, batch_sizes,
-        x_labeled=None, y_labeled=None):
+        x_labeled=None, y_labeled=None, isUnsupervised=False):
     '''
     Evaluates predict_var, batchwise, over all points in x_unlabeled
     and x_labeled.
@@ -112,7 +122,7 @@ def predict(predict_var, x_unlabeled, inputs, y_true, batch_sizes,
     returns:    a list of length n containing the result of all tensors
                 in return_var, where n = len(x_unlabeled) + len(x_labeled)
     '''
-    x_unlabeled, x_labeled, y_labeled = check_inputs(x_unlabeled, x_labeled, y_labeled, y_true)
+    x_unlabeled, x_labeled, y_labeled = check_inputs(x_unlabeled, x_labeled, y_labeled, y_true, isUnsupervised=isUnsupervised)
 
     # combined data
     x = np.concatenate((x_unlabeled, x_labeled), 0)
@@ -160,11 +170,11 @@ def predict(predict_var, x_unlabeled, inputs, y_true, batch_sizes,
     else:
         return np.sum(y_preds)
 
-def predict_sum(predict_var, x_unlabeled, inputs, y_true, batch_sizes, x_labeled=None, y_labeled=None):
+def predict_sum(predict_var, x_unlabeled, inputs, y_true, batch_sizes, x_labeled=None, y_labeled=None, isUnsupervised=False):
     '''
     Convenience function: sums over all the points to return a single value
     per tensor in predict_var
     '''
     y = predict(predict_var, x_unlabeled, inputs, y_true, batch_sizes,
-            x_labeled=x_labeled, y_labeled=y_labeled)
+            x_labeled=x_labeled, y_labeled=y_labeled, isUnsupervised=isUnsupervised)
     return np.sum(y)
