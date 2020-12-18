@@ -4,28 +4,40 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from timeit import default_timer
+
+from gam_package.distance_functions.euclidean_distance import euclidean_distance
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 import numpy as np
 
 class RankedMedoids:
-    def __init__(self, n_clusters=1, dist_func=None, dist_func_type='euclidean', max_iter=1000, tol=0.0001,
-                 f="mushroom-attributions-200-samples.csv"):  # conf = SparkConf().setAppName("project-gam")
+    def __init__(self, n_clusters=3, dist_func=None, dist_func_type='euclidean', max_iter=1000, tol=0.0001,
+                 attributions_path="data/mushroom-attributions-200-samples.csv"):  # conf = SparkConf().setAppName("project-gam")
 
-        print("RankedMedoids.(n_clusters=1, dist_func='euclidean', max_iter=, tol=, f='')")
+        print("RankedMedoids(n_clusters=1, dist_func='euclidean', max_iter=, tol=, f='')")
 
-        self.filename = f
-        self.k = n_clusters
+        self.attributions_path = attributions_path
+        self.n_clusters = n_clusters
 
         self.max_iter = max_iter
         self.tol = tol
         self.centers = None
         self.members = None
 
-        self.dist_func = dist_func
+
         self.dist_func_type = dist_func_type
 
-    # Attain the original dataset for the analysis
+        if self.dist_func_type == "euclidean":
+            self.dist_func = euclidean_distance
+        elif self.dist_func_type == "spearman":
+            self.dist_func = spearman_squared_distance
+        elif self.dist_func_type == "kendall":
+            self.dist_func = mergeSortDistance
+
+        if dist_func is not None:
+            self.dist_func = dist_func
+
+            # Attain the original dataset for the analysis
     def getDataset(self):
         print("RankedMedoids.getDataset()")
 
@@ -143,19 +155,6 @@ class RankedMedoids:
 
         return groups, medoids
 
-    # Update medoids: use the two tables to calculate the point with highest hv value in each cluster and set it as the new medoid
-    def updateMedoids(self, k, m, n, medoids, similarityTable, rankTable):
-        # print("RankedMedoids.updateMedoids(k, m, n, medoids, similarityTable, rankTable)")
-
-        newMedoids = set()
-        for med in medoids:
-            mostSimilar = similarityTable[med][:m]
-            maxHv = (-1, -1)
-            for simi in mostSimilar:
-                hv = self.getHv(simi, m, n, rankTable, set(mostSimilar))
-                if hv > maxHv[1]:
-                    maxHv = (simi, hv)
-            newMedoids.add(maxHv[0])
 
     def fit(self, X=None, plotit=False, verbose=True, attributions_path = ''):
         print("RankedMedoids.fit(X=None, plotit=False, verbose=True, attributions_path = '')")
@@ -172,7 +171,7 @@ class RankedMedoids:
         if plotit:
             _, ax = plt.subplots(1, 1)
             colors = ["b", "g", "r", "c", "m", "y", "k"]
-            if self.k > len(colors):
+            if self.n_clusters > len(colors):
                 raise ValueError("we need more colors")
 
             for i in range(len(self.centers)):
@@ -189,8 +188,8 @@ class RankedMedoids:
         return n, duration
 
     # Print out the table nicely
-    def printNice(self, clusters):
-        print("RankedMedoids.printNice(clusters)")
+    def printClusters(self, clusters):
+        print("RankedMedoids.printClusters(clusters)")
 
         for i in range(len(clusters)):
             print(clusters[i])
@@ -200,10 +199,10 @@ class RankedMedoids:
 
         r, s = self.buildRankTable(data)
         print("Rank Table: ")
-        self.printNice(r)
+        self.printClusters(r)
         print()
         print("Similarity Table: ")
-        self.printNice(s)
+        self.printClusters(s)
 
     def test2D(self):
         print("RankedMedoids.test2D()")
@@ -245,41 +244,47 @@ class RankedMedoids:
         # Standardizing the features
         x = StandardScaler().fit_transform(x)
 
-    # Perform PCA and plot
-    def pcaDataAndPlot(self, x, clusters):
-        print("RankedMedoids.pcaDataAndPlot(clusters)")
+    # Print out the table nicely
+    def printMedoidsAndClusters(self, medoids, clusters):
+        print("RankedMedoids.printClusters(clusters)")
 
-        pca = PCA(n_components=2)
-        principalComponents = pca.fit_transform(x)
-        principalDf = pd.DataFrame(data=principalComponents, columns=['principal component 1', 'principal component 2'])
-        colors = ['blue', 'black', 'yellow', 'green', 'purple']
-        plt.figure(figsize=(10, 8))
-        plt.xlim(-3, 3)
-        for i in clusters[0]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[0])
-        for i in clusters[1]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[1])
-        for i in clusters[2]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[2])
-        for i in clusters[3]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[3])
-        for i in clusters[4]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[4])
+        for i in range(len(clusters)):
+            print(medoids[i], " -> ", clusters[i])
+
+    # Update medoids: use the two tables to calculate the point with highest hv value in each cluster and set it as the new medoid
+    def updateMedoids(self, k, m, n, medoids, similarityTable, rankTable):
+        # print("RankedMedoids.updateMedoids(k, m, n, medoids, similarityTable, rankTable)")
+
+        newMedoids = []
+        for med in medoids:
+            mostSimilar = similarityTable[med][:m]
+            maxHv = (-1, -1)
+            for simi in mostSimilar:
+                hv = self.getHv(simi, m, n, rankTable, set(mostSimilar))
+                if hv > maxHv[1]:
+                    maxHv = (simi, hv)
+            newMedoids.append(maxHv[0])
+
+        return newMedoids
 
     # Do the main job of clustering. Define values for k, m, numOfLoops. When looping, update medoids accordingly
     def main(self, data):
         print("RankedMedoids.main(data)")
         n = len(data)
-        numOfLoops = 100
+        numOfLoops = 10
         k = 5
         m = 12
-        medoids = self.randomMedoids(k, data)
+        medoids = list(self.randomMedoids(k, data))
+        print("inital medoids: ", medoids)
         rankTable, similarityMetrix = self.buildRankTable(data)
         for i in range(numOfLoops):
-            self.updateMedoids(k, m, n, medoids, similarityMetrix, rankTable)
+            medoids = self.updateMedoids(k, m, n, medoids, similarityMetrix, rankTable)
+            print(medoids)
         clusters, medoids = self.assignToClusters(k, n, medoids, rankTable)
 
-        self.printNice(clusters)
+        # self.printClusters(clusters)
+        self.printMedoidsAndClusters(medoids, clusters)
+
         # print(self.checkClustersContainDifferent(clusters))
         # self.plotParralelAndRadar(clusters, data)
         return medoids, clusters

@@ -27,19 +27,20 @@ class TestClass:
     #     print("BanditPAM Runtime: ", g.duration)
 
     def test_gam_ranked_wine_runtime(self):
-        print("")
+        print("-- test_gam_ranked_wine_runtime -------------------------------------------------------")
         gam = GAM()
         local_attribution_path = 'data/wine.csv'
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="ranked medoids")
         g.generate()
-        print("Ranked Medoids Runtime: ", g.duration)
+        print("Ranked Medoids Runtime: ", g.duration, "\n")
 
     # def test_gam_bandit_wine_runtime(self):
+    #     print("-- test_gam_bandit_wine_runtime -------------------------------------------------------")
     #     gam = GAM()
     #     local_attribution_path = 'data/wine.csv'
     #     g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="bandit pam")
     #     g.generate()
-    #     print("BanditPAM Runtime: ", g.duration)
+    #     print("BanditPAM Runtime: ", g.duration, "\n")
 
 
 
