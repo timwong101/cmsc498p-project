@@ -16,7 +16,7 @@ from gam_package.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
-from gam_package.ucb_pam import BanditPAM
+from gam_package.bandit_pam import BanditPAM
 import urllib.request as urllib
 
 logging.basicConfig(
@@ -42,7 +42,7 @@ class GAM:
 
     def __init__(
         self,
-        k=2,
+        n_clusters=2,
         attributions_path='data/mushroom-attributions-200-samples.csv',
         cluster_method="parallel medoids",
         distance="euclidean",
@@ -68,7 +68,7 @@ class GAM:
 
         self.scoring_method = scoring_method
 
-        self.k = k
+        self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.tol = tol
 
@@ -274,7 +274,7 @@ class GAM:
         # tol = minimum error for medoid optimum
         if self.cluster_method is None: # use regular k-medoids
             clusters = KMedoids(
-                self.k,
+                self.n_clusters,
                 dist_func=self.distance_function,
                 max_iter=self.max_iter,
                 tol=self.tol,
@@ -287,7 +287,7 @@ class GAM:
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
-            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False, data=self.attributions_path)
+            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False, attributions_path=self.attributions_path)
             self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
@@ -300,7 +300,7 @@ class GAM:
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids()
 
-            n, duration = clusters.fit(X=self.clustering_attributions, verbose=False, data = self.attributions_path)
+            n, duration = clusters.fit(X=self.clustering_attributions, verbose=False, attributions_path = self.attributions_path)
             self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
@@ -310,9 +310,9 @@ class GAM:
             #facetedRadarPlot(dfp, mlist)
         elif self.cluster_method == "spectral clustering":
             pass
-        elif self.cluster_method == "banditPAM":
+        elif self.cluster_method == "bandit pam":
             banditPAM = BanditPAM()
-            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False, data = self.attributions_path)
+            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False, attributions_path = self.attributions_path)
             self.duration = duration
 
             self.clustering_attributions = imgs
@@ -334,7 +334,7 @@ class GAM:
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
     local_attribution_path = 'data/mushroom-attributions-200-samples.csv'
-    g = GAM(attributions_path = local_attribution_path, k=3, cluster_method='parallel medoids') # initialize GAM with filename, k=number of clusters
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam') # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

@@ -124,12 +124,12 @@ class ParallelMedoids:
         newMedoid = patternsInClusters.iloc[minIndex].to_frame().transpose()
         return newMedoid
 
-    def fit(self, X = None, plotit=False, verbose=True, data = ''):
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = ''):
         """
         Fits kmedoids with the option for plotting
         """
         start = default_timer()
-        _,_, n, dfp, mlist = self._cluster(data)
+        _,_, n, dfp, mlist = self._cluster(attributions_path)
         duration = default_timer() - start
 
         if plotit:
@@ -151,13 +151,13 @@ class ParallelMedoids:
                 )
         return n, dfp, mlist, duration
 
-    def _cluster(self, data):
+    def _cluster(self, attributions_path):
         sc = SparkContext()
         sc.setLogLevel("OFF")
         sqlContext = SQLContext(sc)
 
         # sets up the initial df and initializes variables
-        df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(data)
+        df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(attributions_path)
         max_iter = 10; k = 3; sumOfDistances1 = float("inf")
         df = df.na.drop()
         # set medoids equal to the initial medoids

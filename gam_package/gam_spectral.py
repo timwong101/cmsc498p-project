@@ -16,7 +16,7 @@ from gam_package.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
-from gam_package.ucb_pam import BanditPAM
+from gam_package.bandit_pam import BanditPAM
 import urllib.request as urllib
 
 import sys, os, pickle

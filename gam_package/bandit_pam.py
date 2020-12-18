@@ -39,13 +39,13 @@ class BanditPAM:
             N = 70000
             m = 28
             sigma = 0.7
-            self.train_images = mnist.train_images()
+            self.train_data = mnist.train_images()
             self.train_labels = mnist.train_labels()
-            self.test_images = mnist.test_images()
+            self.test_data = mnist.test_images()
             self.test_labels = mnist.test_labels()
-            self.total_images = np.append(self.train_images, self.test_images, axis=0)
+            self.total_data = np.append(self.train_data, self.test_data, axis=0)
             self.total_labels = np.append(self.train_labels, self.test_labels, axis=0)
-            return self.total_images.reshape(N, m * m) / 255, self.total_labels, sigma
+            return self.total_data.reshape(N, m * m) / 255, self.total_labels, sigma
         elif args.dataset == "SCRNA":
             file = 'person1/fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices/NUMPY_OUT/np_data.npy'
             data_ = np.load(file)
@@ -71,12 +71,12 @@ class BanditPAM:
 
             return trees, None, 0.0
         elif args.dataset == 'mushrooms':
-            file = self.data
-            self.total_images = np.genfromtxt(file, dtype=float, delimiter=",", skip_header=1)
-            with open(file) as attribution_file:
+            filepath = self.attributions_path
+            self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
+            with open(filepath) as attribution_file:
                 self.feature_labels = next(csv.reader(attribution_file))
             sigma = 0.01
-            return self.total_images, self.feature_labels, sigma
+            return self.total_data, self.feature_labels, sigma
 
         else:
             raise Exception("Didn't specify a valid dataset")
@@ -846,11 +846,11 @@ class BanditPAM:
         return self.centers, self.members, N, imgs, self.feature_labels
 
 
-    def fit(self, X = None, plotit=False, verbose=True, data = ''):
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = ''):
         """
         Fits kmedoids with the option for plotting
         """
-        self.data = data
+        self.attributions_path = attributions_path
         start = default_timer()
         _,_, n, imgs, feature_labels = self._cluster()
         duration = default_timer() - start
