@@ -246,7 +246,7 @@ class RankedMedoids:
 
     # Print out the table nicely
     def printMedoidsAndClusters(self, medoids, clusters):
-        print("RankedMedoids.printClusters(clusters)")
+        print("RankedMedoids.printMedoidsAndClusters(clusters)")
 
         for i in range(len(clusters)):
             print(medoids[i], " -> ", clusters[i])
@@ -279,7 +279,7 @@ class RankedMedoids:
         rankTable, similarityMetrix = self.buildRankTable(data)
         for i in range(numOfLoops):
             medoids = self.updateMedoids(k, m, n, medoids, similarityMetrix, rankTable)
-            print(medoids)
+            print("current medoids: ", medoids)
         clusters, medoids = self.assignToClusters(k, n, medoids, rankTable)
 
         # self.printClusters(clusters)
