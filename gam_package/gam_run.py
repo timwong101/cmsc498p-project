@@ -1,21 +1,15 @@
 
 import csv
 import logging
-import math
 from collections import Counter
 
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import pairwise_distances, silhouette_score
 
-
-from gam_package.clustering import KMedoids
-from gam_package.kendall_tau_distance import mergeSortDistance
-from gam_package.spearman_distance import spearman_squared_distance
+from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
+from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
-from gam_package.plot import parallelPlot
-
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO

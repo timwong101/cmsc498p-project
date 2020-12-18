@@ -1,44 +1,30 @@
-import argparse
 import csv
 import logging
-import math
-from collections import Counter, defaultdict
+from collections import Counter
 
 import matplotlib.pylab as plt
-import numpy as np
 import pandas as pd
-from sklearn.metrics import pairwise_distances, silhouette_score
-from timeit import default_timer
 
 from gam_package.clustering import KMedoids
-from gam_package.kendall_tau_distance import mergeSortDistance
-from gam_package.spearman_distance import spearman_squared_distance
+from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
+from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
 from gam_package.bandit_pam import BanditPAM
-import urllib.request as urllib
 
-import sys, os, pickle
+import os
 import tensorflow as tf
 import numpy as np
-import traceback
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.metrics import normalized_mutual_info_score as nmi
 
-import keras.backend as K
-from keras.models import Model, load_model
-from keras.layers import Input, Lambda
-from keras.optimizers import RMSprop
+from keras.layers import Input
 
-from spectral_clustering.core import train2
-from spectral_clustering.core import costs
 from spectral_clustering.core import networks2
-from spectral_clustering.core.layer import stack_layers
-from spectral_clustering.core.util import get_scale, print_accuracy, get_cluster_sols, LearningHandler, make_layer_list, train_gen, get_y_preds
+from spectral_clustering.core.util import get_cluster_sols
 
 '''
 Expected run times on a GTX 1080 GPU:
@@ -53,9 +39,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
 
 import argparse
 from collections import defaultdict
-
-from spectral_clustering.core.data import get_data
-from spectral_clustering.applications.spectralnet import run_net
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO

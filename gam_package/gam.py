@@ -1,23 +1,19 @@
 
 import csv
 import logging
-import math
 from collections import Counter
 
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import pairwise_distances, silhouette_score
-from timeit import default_timer
 
 from gam_package.clustering import KMedoids
-from gam_package.kendall_tau_distance import mergeSortDistance
-from gam_package.spearman_distance import spearman_squared_distance
+from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
+from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
 from gam_package.bandit_pam import BanditPAM
-import urllib.request as urllib
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
@@ -45,7 +41,8 @@ class GAM:
         n_clusters=2,
         attributions_path='data/mushroom-attributions-200-samples.csv',
         cluster_method="parallel medoids",
-        distance="euclidean",
+        dist_func_type="euclidean",
+        dist_func=None,
         use_normalized=True,
         scoring_method=None,
         max_iter=100,
@@ -54,16 +51,17 @@ class GAM:
         self.attributions_path = attributions_path # file path for csv dataset
         self.cluster_method = cluster_method # string representing appropriate k-medoids algorithm
 
-        self.distance = distance # string specifying appropriate dissimilarity metric
-        if self.distance == "euclidean":
-            self.distance_function = self.euclidean_distance
-        elif self.distance == "spearman":
-            self.distance_function = spearman_squared_distance
-        elif self.distance == "kendall":
-            self.distance_function = mergeSortDistance
+        self.dist_func_type = dist_func_type
+        # string specifying appropriate dissimilarity metric
+        if self.dist_func_type == "euclidean":
+            self.dist_func = self.euclidean_distance
+        elif self.dist_func_type == "spearman":
+            self.dist_func = spearman_squared_distance
+        elif self.dist_func_type == "kendall":
+            self.dist_func = mergeSortDistance
         else:
-            self.distance_function = (
-                distance
+            self.dist_func = (
+                dist_func
             )  # assume this is metric listed in pairwise.PAIRWISE_DISTANCE_FUNCTIONS
 
         self.scoring_method = scoring_method
@@ -275,7 +273,7 @@ class GAM:
         if self.cluster_method is None: # use regular k-medoids
             clusters = KMedoids(
                 self.n_clusters,
-                dist_func=self.distance_function,
+                dist_func=self.dist_func,
                 max_iter=self.max_iter,
                 tol=self.tol,
             )
@@ -298,7 +296,7 @@ class GAM:
             silhouetteAnalysis(dfp, mlist)
 
         elif self.cluster_method == "ranked medoids":
-            clusters = RankedMedoids()
+            clusters = RankedMedoids(dist_func_type=self.dist_func_type)
 
             n, duration = clusters.fit(X=self.clustering_attributions, verbose=False, attributions_path = self.attributions_path)
             self.duration = duration

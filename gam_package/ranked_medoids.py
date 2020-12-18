@@ -4,11 +4,16 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from timeit import default_timer
-
+from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
+from gam_package.distance_functions.spearman_distance import spearman_squared_distance
+import numpy as np
 
 class RankedMedoids:
-    def __init__(self, n_clusters=1, dist_func='euclidean', max_iter=1000, tol=0.0001,
+    def __init__(self, n_clusters=1, dist_func=None, dist_func_type='euclidean', max_iter=1000, tol=0.0001,
                  f="mushroom-attributions-200-samples.csv"):  # conf = SparkConf().setAppName("project-gam")
+
+        print("RankedMedoids.(n_clusters=1, dist_func='euclidean', max_iter=, tol=, f='')")
+
         self.filename = f
         self.k = n_clusters
 
@@ -17,8 +22,13 @@ class RankedMedoids:
         self.centers = None
         self.members = None
 
+        self.dist_func = dist_func
+        self.dist_func_type = dist_func_type
+
     # Attain the original dataset for the analysis
     def getDataset(self):
+        print("RankedMedoids.getDataset()")
+
         data = pd.read_csv(self.attributions_path)
         data = data[['odor', 'bruises']]  # Reduce dims of dataset in order to visualize
         dataset = []
@@ -30,6 +40,8 @@ class RankedMedoids:
 
     # Generate 2-d test data
     def generate2dData(self):
+        print("RankedMedoids.generate2dData()")
+
         xs = []
         ys = []
         n = 500
@@ -47,17 +59,42 @@ class RankedMedoids:
     # Compute distance between each pair of data points
     # data: the actual data we use for this algorithm, it is a collection of data points, each point has dimension dims
     def computeDistance(self, i, j, data):
-        dims = len(data[0])
-        dis = 0
-        for x in range(dims):
-            dis += (data[i][x] - data[j][x]) ** 2
-        return dis ** .5
+        # print("RankedMedoids.computeDistance(i, j, data)")
+
+        # from gam_package.kendall_tau_distance import mergeSortDistance
+        # from gam_package.spearman_distance import spearman_squared_distance
+
+        number_of_features = len(data[0])
+        distance = 0
+
+        if self.dist_func_type == "euclidean":
+            for x in range(number_of_features):
+                distance += (data[i][x] - data[j][x]) ** 2
+            return distance ** .5
+        elif self.dist_func_type == "spearman":
+            for x in range(number_of_features):
+                distance += spearman_squared_distance(data[i][x], data[j][x])
+            return distance
+        elif self.dist_func_type == "kendall":
+            for x in range(number_of_features):
+                distance += mergeSortDistance(data[i][x], data[j][x])
+            return distance
+        # else:
+        #     self.dist_func = (
+        #         dist_func
+        #     )  # assume this is metric listed in pairwise.PAIRWISE_DISTANCE_FUNCTIONS
+
+
 
     # Build Rank and Similarity tables. This function produces the crucial tables this algorithm requires
     def buildRankTable(self, data):
+        print("RankedMedoids.buildRankTable(data)")
+
         n = len(data)
         rank = [[(0, 0) for i in range(n)] for j in range(n)]
         similarityMetrix = [[(0, 0) for i in range(n)] for j in range(n)]
+
+        data = np.array(data)
 
         # Compute the distance and record them in a tuple
         for i in range(n):
@@ -91,6 +128,8 @@ class RankedMedoids:
     # setG: set of integers - indexes of data points
     # n: size of dataset
     def getHv(self, index, m, n, rankTable, setG):
+        # print("RankedMedoids.getHv(index, m, n, rankTable, setG)")
+
         hv = m * (m + 1) / 2
         for j in range(n):
             if not j in setG:
@@ -101,6 +140,8 @@ class RankedMedoids:
 
     # Randomly select k data points as our starting k medoids.
     def randomMedoids(self, k, data):
+        print("RankedMedoids.randomMedoids(k, data)")
+
         medoids = set()
         for i in range(k):
             oldLen = len(medoids)
@@ -110,6 +151,8 @@ class RankedMedoids:
 
     # Assign each points to closest medoid, using Rank table
     def assignToClusters(self, k, n, medoids, rankTable):
+        print("RankedMedoids.assignToClusters(k, n, medoids, rankTable)")
+
         groups = []  # list of Set
         for i in range(k):
             groups.append([])  # Make k empty groups
@@ -131,6 +174,8 @@ class RankedMedoids:
 
     # Update medoids: use the two tables to calculate the point with highest hv value in each cluster and set it as the new medoid
     def updateMedoids(self, k, m, n, medoids, similarityTable, rankTable):
+        # print("RankedMedoids.updateMedoids(k, m, n, medoids, similarityTable, rankTable)")
+
         newMedoids = set()
         for med in medoids:
             mostSimilar = similarityTable[med][:m]
@@ -142,6 +187,8 @@ class RankedMedoids:
             newMedoids.add(maxHv[0])
 
     def fit(self, X=None, plotit=False, verbose=True, attributions_path = ''):
+        print("RankedMedoids.fit(X=None, plotit=False, verbose=True, attributions_path = '')")
+
         """
         Fits kmedoids with the option for plotting
         """
@@ -172,10 +219,14 @@ class RankedMedoids:
 
     # Print out the table nicely
     def printNice(self, clusters):
+        print("RankedMedoids.printNice(clusters)")
+
         for i in range(len(clusters)):
             print(clusters[i])
 
     def testPrintTables(self, data):
+        print("RankedMedoids.testPrintTables(data)")
+
         r, s = self.buildRankTable(data)
         print("Rank Table: ")
         self.printNice(r)
@@ -184,10 +235,14 @@ class RankedMedoids:
         self.printNice(s)
 
     def test2D(self):
+        print("RankedMedoids.test2D()")
+
         self.main(self.generate2dData())
 
     # Cluster the data
     def cluster(self):
+        print("RankedMedoids.cluster()")
+
         df = pd.read_csv(self.attributions_path)
         dataset = []
         for i in range(len(df)):
@@ -197,6 +252,8 @@ class RankedMedoids:
 
     # This method checks whether there exists same data points in different clusters
     def checkClustersContainDifferent(self, clusters):
+        print("RankedMedoids.checkClustersContainDifferent(clusters)")
+
         for i in range(len(clusters)):
             for d in clusters[i]:
                 for j in range(len(clusters)):
@@ -207,6 +264,8 @@ class RankedMedoids:
 
     # Standardize data before the PCA analysis
     def standardizeData(self, df):
+        print("RankedMedoids.standardizeData(df)")
+
         features = df.columns
         # Separating out the features
         x = df.loc[:, features].values
@@ -217,6 +276,8 @@ class RankedMedoids:
 
     # Perform PCA and plot
     def pcaDataAndPlot(self, x, clusters):
+        print("RankedMedoids.pcaDataAndPlot(clusters)")
+
         pca = PCA(n_components=2)
         principalComponents = pca.fit_transform(x)
         principalDf = pd.DataFrame(data=principalComponents, columns=['principal component 1', 'principal component 2'])
@@ -236,6 +297,7 @@ class RankedMedoids:
 
     # Do the main job of clustering. Define values for k, m, numOfLoops. When looping, update medoids accordingly
     def main(self, data):
+        print("RankedMedoids.main(data)")
         n = len(data)
         numOfLoops = 100
         k = 5
