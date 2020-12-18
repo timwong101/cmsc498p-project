@@ -84,6 +84,7 @@ class KMedoids:
         """
         Fits kmedoids with the option for plotting
         """
+
         centers, members, _, _, _ = self.kmedoids_run(
             X,
             self.n_clusters,

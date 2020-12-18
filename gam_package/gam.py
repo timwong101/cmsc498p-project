@@ -7,7 +7,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
-from gam_package.clustering import KMedoids
+from gam_package.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
@@ -16,6 +16,13 @@ from gam_package.parallel_medoids import ParallelMedoids
 from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.ranked_medoids import RankedMedoids
 from gam_package.bandit_pam import BanditPAM
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.decomposition import PCA as sklearnPCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.datasets.samples_generator import make_blobs
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
@@ -281,6 +288,22 @@ class GAM:
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
 
+            y = self.subpopulations
+            X = self.clustering_attributions
+            X_norm = (X - X.min()) / (X.max() - X.min())
+            lda = LDA(n_components=2)  # 2-dimensional LDA
+            lda_transformed = pd.DataFrame(lda.fit_transform(X_norm, y))
+
+            # Plot all three series
+            plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
+            plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
+            plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
+
+            # Display legend and show plot
+            plt.legend(loc=3)
+            plt.show()
+            print("")
+
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
             n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False, attributions_path=self.attributions_path)
@@ -330,7 +353,7 @@ class GAM:
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
     local_attribution_path = 'data/mushroom-attributions-200-samples.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam') # initialize GAM with filename, k=number of clusters
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method=None) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

@@ -5,7 +5,7 @@ from collections import Counter
 import matplotlib.pylab as plt
 import pandas as pd
 
-from gam_package.clustering import KMedoids
+from gam_package.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.parallel_medoids import ParallelMedoids
