@@ -1,7 +1,5 @@
-import pytest
-
 from gam_package.gam import GAM
-from gam_package.parallel_medoids import ParallelMedoids
+
 
 class TestClass:
 

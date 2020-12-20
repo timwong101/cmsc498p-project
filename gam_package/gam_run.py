@@ -9,7 +9,7 @@ import pandas as pd
 
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
-from gam_package.parallel_medoids import ParallelMedoids
+from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO

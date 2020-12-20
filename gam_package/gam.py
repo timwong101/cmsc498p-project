@@ -5,24 +5,21 @@ from collections import Counter
 
 import matplotlib.pylab as plt
 import numpy as np
-import pandas as pd
 
-from gam_package.k_medoids import KMedoids
+from gam_package.medoids_algorithms.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
 
-from gam_package.parallel_medoids import ParallelMedoids
-from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
-from gam_package.ranked_medoids import RankedMedoids
-from gam_package.bandit_pam import BanditPAM
+from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
+from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
+from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
+from gam_package.medoids_algorithms.bandit_pam import BanditPAM
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from sklearn.decomposition import PCA as sklearnPCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.datasets.samples_generator import make_blobs
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO

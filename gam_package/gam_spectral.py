@@ -5,13 +5,13 @@ from collections import Counter
 import matplotlib.pylab as plt
 import pandas as pd
 
-from gam_package.k_medoids import KMedoids
+from gam_package.medoids_algorithms.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
-from gam_package.parallel_medoids import ParallelMedoids
-from gam_package.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
-from gam_package.ranked_medoids import RankedMedoids
-from gam_package.bandit_pam import BanditPAM
+from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
+from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
+from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
+from gam_package.medoids_algorithms.bandit_pam import BanditPAM
 
 import os
 import tensorflow as tf

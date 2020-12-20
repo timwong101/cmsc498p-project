@@ -22,8 +22,8 @@ class ParallelMedoids:
     """
 
     def __init__(self, n_clusters=1, dist_func='euclidean', max_iter=1000, tol=0.0001,
-                 f="mushroom-attributions-200-samples.csv"):
-        self.filename = f
+                 attributions_path="data/mushrooms.csv"):
+        self.attributions_path = attributions_path
         self.k = n_clusters
         if dist_func == 'euclidean':
             self.dist = self.distance

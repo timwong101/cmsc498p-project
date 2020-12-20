@@ -87,6 +87,13 @@ class BanditPAM:
             return self.total_data, self.feature_labels, sigma
 
         elif args.dataset == 'data/mice_protein.csv':
+
+            # import os
+            #
+            # cwd = os.getcwd()  # Get the current working directory (cwd)
+            # files = os.listdir(cwd)  # Get all the files in that directory
+            # print("Files in %r: %s" % (cwd, files))
+
             filepath = self.attributions_path
             self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
             with open(filepath) as attribution_file:
