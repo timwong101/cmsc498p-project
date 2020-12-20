@@ -674,8 +674,8 @@ class BanditPAM:
 
         return estimates.round(self.DECIMAL_DIGITS), None, tmp_refs
 
-    def UCB_swap(self, args, imgs, sigma, init_medoids, dist_mat=None, cache_computed=None):
-        print("ucb_pam -> UCB_swap")
+    def swap(self, args, imgs, sigma, init_medoids, dist_mat=None, cache_computed=None):
+        print("swap")
         '''
         Performs the SWAP step of BanditPAM. Analogous to the SWAP step of PAM,
         BanditPAM chooses medoids to swap with non-medoids by performing the swap
@@ -811,7 +811,7 @@ class BanditPAM:
         return medoids, S_logstring, iter, loss
 
     def build_and_swap(self, args):
-        print("ucb_pam -> build_and_swap")
+        print("build_and_swap")
         '''
         Run the entire BanditPAM algorithm, both the BUILD step and the SWAP step
         '''
@@ -854,7 +854,7 @@ class BanditPAM:
             else:
                 init_medoids = built_medoids.copy()
 
-            swapped_medoids, S_logstring, num_swaps, final_loss = self.UCB_swap(args, imgs, sigma,
+            swapped_medoids, S_logstring, num_swaps, final_loss = self.swap(args, imgs, sigma,
                                                                                     init_medoids,
                                                                                     dist_mat=dist_mat,
                                                                                     cache_computed=args.cache_computed)
@@ -961,5 +961,5 @@ class BanditPAM:
 
 
 if __name__ == '__main__':
-    rankedMedoids = BanditPAM()
-    rankedMedoids.fit(attributions_path="data/mice_protein.csv")
+    bandit_pam = BanditPAM()
+    bandit_pam.fit(attributions_path="data/mice_protein.csv")
