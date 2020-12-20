@@ -19,8 +19,8 @@ from timeit import default_timer
 class BanditPAM:
 
     def __init__(self, n_clusters=1, max_iter=1000, tol=0.0001,
-                 f="mushroom-attributions-200-samples.csv"):
-        self.cluster_attributions = f
+                 attributions_path="data/mushrooms.csv"):
+        self.attributions_path = attributions_path
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.tol = tol
@@ -84,6 +84,15 @@ class BanditPAM:
             with open(filepath) as attribution_file:
                 self.feature_labels = next(csv.reader(attribution_file))
             sigma = 0.01
+            return self.total_data, self.feature_labels, sigma
+
+        elif args.dataset == 'data/mice_protein.csv':
+            filepath = self.attributions_path
+            self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
+            with open(filepath) as attribution_file:
+                self.feature_labels = next(csv.reader(attribution_file))
+            sigma = 0.01
+            self.total_data = np.nan_to_num(self.total_data)
             return self.total_data, self.feature_labels, sigma
 
         else:
@@ -429,9 +438,9 @@ class BanditPAM:
         new_medoids = medoids.copy()
         new_medoids.remove(orig_medoid)
         new_medoids.append(new_medoid)
-        new_best_distances, new_closest_medoids = self.get_best_distances(new_medoids, imgs,
-                                                                          metric=args.metric,
-                                                                     dist_mat=dist_mat)
+        new_best_distances, new_closest_medoids \
+            = self.get_best_distances(new_medoids, imgs, metric=args.metric, dist_mat=dist_mat)
+
         new_loss = np.mean(new_best_distances)
         performed_or_not = ''
         if new_loss < loss:
@@ -449,6 +458,7 @@ class BanditPAM:
             print("Old loss:", loss)
             print("New loss:", new_loss)
 
+        print("updated medoids: ", new_medoids)
         return performed_or_not, new_medoids, min(new_loss, loss)
 
     def build_sample_for_targets(self, imgs, targets, batch_size, best_distances, metric=None, return_sigma=False,
@@ -484,8 +494,8 @@ class BanditPAM:
 
         return estimates.round(self.DECIMAL_DIGITS), None, tmp_refs
 
-    def UCB_build(self, args, imgs, sigma, dist_mat=None):
-        print("ucb_pam -> UCB_build")
+    def build(self, args, imgs, sigma, dist_mat=None):
+        print("ucb_pam -> build")
         '''
         Performs the BUILD step of BanditPAM. Analogous to the BUILD step of PAM,
         BanditPAM assigns the initial medoids one-by-one by choosing the point at
@@ -604,6 +614,7 @@ class BanditPAM:
 
             medoids.append(new_medoid)
             best_distances, closest_medoids = self.get_best_distances(medoids, imgs, metric=metric, dist_mat=dist_mat)
+            # print("updated medoids: ", closest_medoids)
             print("Computed exactly for:", exact_mask.sum())
 
             # get information about sigmas: min, 25, median, 75, max, mean
@@ -820,7 +831,7 @@ class BanditPAM:
         N = len(imgs)
         if 'B' in args.build_ao_swap:
             assert args.cache_computed is None, "Cache_computed should be None"
-            built_medoids, B_logstring, cache_computed = self.UCB_build(args, imgs, sigma, dist_mat=dist_mat)
+            built_medoids, B_logstring, cache_computed = self.build(args, imgs, sigma, dist_mat=dist_mat)
             args.cache_computed = cache_computed
             print("Built medoids", built_medoids)
 
@@ -856,14 +867,19 @@ class BanditPAM:
             self.members.append(members)
         return self.centers, self.members, N, imgs, self.feature_labels
 
+    def makeClusters(self, datasetName):
+        args = self.setArguments(datasetName)
+        return self.build_and_swap(args)
 
-    def fit(self, X = None, plotit=False, verbose=True, attributions_path = 'data/mushrooms.csv'):
+
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None):
         """
         Fits kmedoids with the option for plotting
         """
-        self.attributions_path = attributions_path
+        if attributions_path is not None:
+            self.attributions_path = attributions_path
         start = default_timer()
-        _,_, n, imgs, feature_labels = self._cluster()
+        _,_, n, imgs, feature_labels = self.makeClusters(attributions_path)
         duration = default_timer() - start
         if plotit:
             _, ax = plt.subplots(1, 1)
@@ -884,7 +900,7 @@ class BanditPAM:
                 )
         return n, imgs, feature_labels, duration
 
-    def setArguments(self, dataset):
+    def setArguments(self, datasetFilePath):
         parser = argparse.ArgumentParser(description=__doc__,
                                          formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('-v', '--verbose', help='print debugging output', action='count', default=0, required=False)
@@ -907,19 +923,37 @@ class BanditPAM:
         cmdline = "-k 5 -N 1000 -s 42 -d MNIST -m L2 -p"
         args = parser.parse_args(shlex.split(cmdline))
 
-        args.dataset = dataset
+
+        args.dataset = datasetFilePath
         args.metric = 'L2'
         args.fast_pam1 = True
         args.num_medoids = 3
-        args.sample_size = 50
+
+        if args.dataset == 'MNIST':
+            pass
+        elif args.dataset == "SCRNA":
+            pass
+        elif args.dataset == "SCRNAPCA":
+            pass
+        elif args.dataset == 'HOC4':
+            pass
+        elif args.dataset == 'mushrooms':
+            args.sample_size = 30
+        elif args.dataset == 'data/mushrooms.csv':
+            args.sample_size = 30
+        elif args.dataset == 'data/wine.csv':
+            args.sample_size = 30
+        elif args.dataset == 'data/mice_protein.csv':
+            args.sample_size = 100
+        else:
+            raise Exception("Didn't specify a valid dataset")
+
 
         return args
 
-    def _cluster(self):
-        args = self.setArguments("mushrooms")
-        return self.build_and_swap(args)
+
 
 if __name__ == '__main__':
 
     rankedMedoids = BanditPAM()
-    rankedMedoids.fit()
+    rankedMedoids.fit(attributions_path="data/mice_protein.csv")
