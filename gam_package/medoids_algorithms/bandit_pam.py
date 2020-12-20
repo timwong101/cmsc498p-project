@@ -961,6 +961,5 @@ class BanditPAM:
 
 
 if __name__ == '__main__':
-
     rankedMedoids = BanditPAM()
     rankedMedoids.fit(attributions_path="data/mice_protein.csv")
