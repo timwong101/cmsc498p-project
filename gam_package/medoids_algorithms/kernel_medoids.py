@@ -8,6 +8,7 @@ from collections import Counter
 import matplotlib.pylab as plt
 import numpy as np
 from timeit import default_timer
+import math
 
 from gam_package.medoids_algorithms.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
@@ -83,27 +84,32 @@ class KernelMedoids :
 
     def rbf(self, x1, x2, sigma):
         ## squared l2 distance between x1 and x2
-        dist = x1.zip(x2).map(pair= > pair._1 - pair._2).map(x= > x * x).sum
-        ## RBF kernel function is exp( - ||x1-x2||^2 / 2 / sigma^2 )
-        math.exp(- dist / (2 * sigma * sigma))
+        # dist = zip(x1, x2).map(lambda pair: pair[0] - pair[1]).map(lambda x: x * x).sum
+        dist = zip(x1, x2)
+        dist2 = list(map(lambda pair: pair[0] - pair[1], dist))
+        dist3 = list(map(lambda x: x * x, dist2))
+        sum_distance = sum(dist3)
 
+        ## RBF kernel function is exp( - ||x1-x2||^2 / 2 / sigma^2 )
+        return math.exp(-1*sum_distance / (2 * sigma * sigma))
 
     '''
      * Compute the RBF kernel functions of a vector and a collection of vectors.
      def rbf(x1: Array[Double], x2: Array[Array[Double]], sigma: Double): Array[Double] 
      '''
-
-    def rbf(x1, x2, sigma):
+    def rbf2(self, x1, x2, sigma):
         n = x2.length
         kernel_arr = [0] * n
         sigma_sq = 2 * sigma * sigma
         dist = 0.0
-        # for (i <- 0 until n) {
         for i in range(0, n):
             ## squared l2 distance between x1 and x2(i)
-            dist = x1.zip(x2(i)).map(pair= > pair._1 - pair._2).map(x= > x * x).sum
+            dist = zip(x1,x2[i])
+            dist2 = list(map(lambda pair: pair[0] - pair[1], dist))
+            dist3 = list(map(lambda x: x * x, dist2))
+            sum_distance = sum(dist3)
             ## RBF kernel function
-            kernel_arr(i) = math.exp(- dist / sigma_sq)
+            kernel_arr[i] = math.exp(-1*dist3 / sigma_sq)
         return kernel_arr
 
     '''
@@ -141,7 +147,7 @@ class KernelMedoids :
         # .map(pair= > (pair._1, broadcast_rbf.value(pair._2, broadcast_samples.value)))
         # .map(pair= > (pair._1, new DenseVector(pair._2)))
         c_mat_rdd = label_vector_rdd
-        .map(lambda pair: self.rbf.value(pair._2, data_samples.value) )
+        .map(lambda pair: self.rbf2(pair[1], data_samples) )
         .map(pair= > (pair._1, new DenseVector(pair._2)))
 
         ## Compute the W matrix of the Nystrom method
@@ -215,9 +221,6 @@ class KernelMedoids :
         time(2) = ((t5 - t4) * 1.0E-9).toString
         print("####################################")
         print("K-means clustering costs  " + time(2) + "  seconds.")
-        print(" ")
-        print("getExecutorMemoryStatus:")
-        print(sc.getExecutorMemoryStatus.toString())
         print("####################################")
         
         ## Predict labels
@@ -249,13 +252,11 @@ class KernelMedoids :
         usv = svd.reduced(w_mat)
         u_mat = usv.U(::, 0 until l)
         s_arr = usv.S(0 until l).toArray.map(s => 1 / math.sqrt(s))
-        for (j <- 0 until l) {
+        for j in range(0,l):
             u_mat(::, j) :*= s_arr(j)
-        }
-        
-        u_mat
-    }
-    
+
+        return u_mat
+
     #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
 #'''
 
