@@ -18,7 +18,6 @@ class ParallelMedoids:
         dist_func = distance metric used for calculating distance, default euclidean
         max_iter = max number of iterations for updating medoids, default 1000
         tol = stopping critera for updating medoids, default 0.0001
-
     """
 
     def __init__(self, n_clusters=1, dist_func='euclidean', max_iter=1000, tol=0.0001,

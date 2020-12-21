@@ -50,6 +50,7 @@ class GAM:
         scoring_method=None,
         max_iter=100,
         tol=1e-3,
+        num_samp = 10
     ):
         self.attributions_path = attributions_path # file path for csv dataset
         self.cluster_method = cluster_method # string representing appropriate k-medoids algorithm
@@ -71,6 +72,7 @@ class GAM:
         self.k = k
         self.max_iter = max_iter
         self.tol = tol
+        self.num_samp = num_samp
 
         self.attributions = None # later initialized to pandas dataframe holding csv data
         self.use_normalized = use_normalized # (boolean): whether to use normalized attributions in clustering, default='True'
@@ -125,8 +127,10 @@ class GAM:
         with open(self.attributions_path) as attribution_file:
             self.feature_labels = next(csv.reader(attribution_file))
 
-        # TODO: utilize appropriate encoding for categorical, non-numerical data
         df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+
+        #df = df.fillna(df.mean())
+        #self.attributions = df.values
         #pd.get_dummies(obj_df, columns=["drive_wheels"]).head()
 
     @staticmethod
@@ -310,9 +314,10 @@ class GAM:
             #facetedRadarPlot(dfp, mlist)
         elif self.cluster_method == "spectral clustering":
             pass
-        elif self.cluster_method == "banditPAM":
+        elif self.cluster_method == "banditpam":
             banditPAM = BanditPAM()
-            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False, data = self.attributions_path)
+            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False,
+                                                              data = self.attributions_path, num_samp = self.num_samp)
             self.duration = duration
 
             self.clustering_attributions = imgs
@@ -335,7 +340,7 @@ class GAM:
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
     local_attribution_path = 'data/Data_Cortex_Nuclear.csv'
-    g = GAM(attributions_path = local_attribution_path, k=3, cluster_method='banditPAM') # initialize GAM with filename, k=number of clusters
+    g = GAM(attributions_path = local_attribution_path, k=3, cluster_method='banditpam') # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

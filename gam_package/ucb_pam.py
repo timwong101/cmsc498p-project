@@ -30,7 +30,6 @@ class BanditPAM:
         self.SIGMA_DIVISOR = 1
 
     def load_data(self, args):
-        print("data_utils -> load_data")
         '''
         Load the different datasets, as a numpy matrix if possible. In the case of
         HOC4, load the datasets as a list of trees.
@@ -70,19 +69,21 @@ class BanditPAM:
                 print("NUM TREES:", len(trees))
 
             return trees, None, 0.0
-        elif args.dataset == 'mushrooms':
+        elif args.dataset == 'csv':
             file = self.data
             self.total_images = np.genfromtxt(file, dtype=float, delimiter=",", skip_header=1)
             with open(file) as attribution_file:
                 self.feature_labels = next(csv.reader(attribution_file))
             sigma = 0.01
+            df = pd.DataFrame(self.total_images, columns=self.feature_labels)
+            df = df.fillna(df.mean())
+            self.total_images = df.values
             return self.total_images, self.feature_labels, sigma
 
         else:
             raise Exception("Didn't specify a valid dataset")
 
     def init_logstring(self):
-        print("data_utils -> init_logstring")
         '''
         Create an empty logstring with the desired fields. The logstrings will be
         updated by the algorithms.
@@ -98,7 +99,6 @@ class BanditPAM:
         return logstring
 
     def update_logstring(self, logstring, k, best_distances, compute_exactly, p, sigma, swap=None):
-        print("data_utils -> update_logstring")
         '''
         Update a given logstring (python dict) with the results of a BUILD or SWAP
         iteration.
@@ -169,7 +169,6 @@ class BanditPAM:
                 raise Exception("Bad metric specified")
 
     def d_tree(self, x1, x2, metric=None, dist_mat=None):
-        print("data_utils -> d_tree")
         '''
         Use this function for computing the edit distance between two trees.
         Supports both on-the-fly computation (metric == 'TREE') as well as using the
@@ -237,7 +236,6 @@ class BanditPAM:
             return np.minimum(self.d(dataset[tar_idx].reshape(1, -1), dataset[ref_idx], metric), best_distances[ref_idx])
 
     def cost_fn_difference(self, imgs, swaps, tmp_refs, current_medoids, metric=None):
-        print("data_utils -> cost_fn_difference")
         '''
         Do not use this function. Always run experiments with the FastPAM1
         optimization, because it yields the same result.
@@ -280,7 +278,6 @@ class BanditPAM:
 
     def cost_fn_difference_FP1(self, imgs, swaps, tmp_refs, current_medoids, metric=None, return_sigma=False, use_diff=True,
                                dist_mat=None):
-        print("data_utils -> cost_fn_difference_FP1")
         '''
         Returns the new losses if we were to perform the swaps in swaps, as in
         cost_fn_difference above, but using the FastPAM1 optimization.
@@ -346,7 +343,6 @@ class BanditPAM:
         return new_losses
 
     def get_best_distances(self, medoids, dataset, subset=None, return_second_best=False, metric=None, dist_mat=None):
-        print("data_utils -> get_best_distances")
         '''
         For each point, calculate the minimum distance to any medoid.
 
@@ -407,7 +403,6 @@ class BanditPAM:
 
     # TODO: Explicitly pass metric instead of args.metric here
     def medoid_swap(self, medoids, best_swap, imgs, loss, args, dist_mat=None):
-        print("data_utils -> medoid_swap")
         '''
         Swaps the medoid-nonmedoid pair in best_swap if it would lower the loss on
         the datapoints in imgs. Returns a string describing whether the swap was
@@ -442,7 +437,6 @@ class BanditPAM:
 
     def build_sample_for_targets(self, imgs, targets, batch_size, best_distances, metric=None, return_sigma=False,
                                  dist_mat=None):
-        print("ucb_pam -> build_sample_for_targets")
         '''
         For the given targets, which are candidate points to be assigned as medoids
         during a build step, we compute the changes in loss they would induce
@@ -474,7 +468,6 @@ class BanditPAM:
         return estimates.round(self.DECIMAL_DIGITS), None, tmp_refs
 
     def UCB_build(self, args, imgs, sigma, dist_mat=None):
-        print("ucb_pam -> UCB_build")
         '''
         Performs the BUILD step of BanditPAM. Analogous to the BUILD step of PAM,
         BanditPAM assigns the initial medoids one-by-one by choosing the point at
@@ -604,7 +597,6 @@ class BanditPAM:
 
     def swap_sample_for_targets(self, imgs, targets, current_medoids, batch_size, FastPAM1=False, metric=None,
                                 return_sigma=False, dist_mat=None):
-        print("ucb_pam -> swap_sample_for_targets")
         '''
         For the given targets (potential swaps) during a swap step, we compute the
         changes in loss they would induce on a subsample of batch_size reference
@@ -646,7 +638,6 @@ class BanditPAM:
         return estimates.round(self.DECIMAL_DIGITS), None, tmp_refs
 
     def UCB_swap(self, args, imgs, sigma, init_medoids, dist_mat=None, cache_computed=None):
-        print("ucb_pam -> UCB_swap")
         '''
         Performs the SWAP step of BanditPAM. Analogous to the SWAP step of PAM,
         BanditPAM chooses medoids to swap with non-medoids by performing the swap
@@ -782,7 +773,6 @@ class BanditPAM:
         return medoids, S_logstring, iter, loss
 
     def UCB_build_and_swap(self, args):
-        print("ucb_pam -> UCB_build_and_swap")
         '''
         Run the entire BanditPAM algorithm, both the BUILD step and the SWAP step
         '''
@@ -843,16 +833,19 @@ class BanditPAM:
         for medoid, members in groupsDict.items():
             self.centers.append(medoid)
             self.members.append(members)
-        return self.centers, self.members, N, imgs, self.feature_labels
+        if args.dataset == "csv":
+            return self.centers, self.members, N, imgs, self.feature_labels
+        else:
+            return self.centers, self.members, N, imgs, self.total_labels
 
 
-    def fit(self, X = None, plotit=False, verbose=True, data = ''):
+    def fit(self, X = None, plotit=False, verbose=True, data='', num_samp=200):
         """
         Fits kmedoids with the option for plotting
         """
         self.data = data
         start = default_timer()
-        _,_, n, imgs, feature_labels = self._cluster()
+        _,_, n, imgs, feature_labels = self._cluster(num_samp)
         duration = default_timer() - start
         if plotit:
             _, ax = plt.subplots(1, 1)
@@ -873,7 +866,7 @@ class BanditPAM:
                 )
         return n, imgs, feature_labels, duration
 
-    def _cluster(self):
+    def _cluster(self, num_samp):
         parser = argparse.ArgumentParser(description=__doc__,
                                          formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('-v', '--verbose', help='print debugging output', action='count', default=0, required=False)
@@ -893,9 +886,9 @@ class BanditPAM:
 
         cmdline = "-k 5 -N 1000 -s 42 -d MNIST -m L2 -p"
         args = parser.parse_args(shlex.split(cmdline))
-        args.dataset = 'mushrooms'
+        args.dataset = 'csv'
         args.metric = 'L2'
         args.fast_pam1 = True
         args.num_medoids = 3
-        args.sample_size = 200
+        args.sample_size = num_samp
         return self.UCB_build_and_swap(args)
