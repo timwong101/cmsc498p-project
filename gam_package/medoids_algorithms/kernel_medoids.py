@@ -9,6 +9,7 @@ import matplotlib.pylab as plt
 import numpy as np
 from timeit import default_timer
 import math
+from numpy.linalg import svd
 
 from gam_package.medoids_algorithms.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
@@ -63,7 +64,7 @@ class KernelMedoids :
         datasetName = datasetName
         args = setArguments(datasetName)
         total_data, total_labels, sigma = load_data(args)
-        total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
+        # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
 
         ## Parse the data to get labels and features
         # RDD[(Int, Array[Double])]
@@ -74,12 +75,12 @@ class KernelMedoids :
 
         ## Perform kernel k-means with Nystrom approximation
         ## (Array[String], Array[String])
-        # result = kernel_kmeans(sc, label_vector_rdd, CLUSTER_NUM, TARGET_DIM, SKETCH_SIZE, SIGMA)
+        result = self.kernel_kmeans(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
         print("")
 
     '''
      * Compute the RBF kernel function of two vectors.
-     def rbf(x1: Array[Double], x2: Array[Double], sigma: Double): Double 
+     def rbf(x1: Array[Double], x2: Array[Double], sigma: Double): Double
      '''
 
     def rbf(self, x1, x2, sigma):
@@ -95,7 +96,7 @@ class KernelMedoids :
 
     '''
      * Compute the RBF kernel functions of a vector and a collection of vectors.
-     def rbf(x1: Array[Double], x2: Array[Array[Double]], sigma: Double): Array[Double] 
+     def rbf(x1: Array[Double], x2: Array[Array[Double]], sigma: Double): Array[Double]
      '''
     def rbf2(self, x1, x2, sigma):
         n = x2.length
@@ -114,12 +115,11 @@ class KernelMedoids :
 
     '''
          * The Nystrom method for approximating the RBF kernel matrix.
-         * Let K be n-by-n kernel matrix. The Nystrom method approximates 
+         * Let K be n-by-n kernel matrix. The Nystrom method approximates
          * K by C * W^{-1}_l * C^T, where we set l = c/2.
          * The Nystrom feature vectors are the rows of C * W^{-1/2}_l.
          *
          * Input
-         *  sc: SparkContext
          *  label_vector_rdd: RDD of labels and raw input feature vectors
          *  c: sketch size (k < s < c/2)
          *  sigma: kernel width parameter
@@ -130,8 +130,42 @@ class KernelMedoids :
          return RDD[(Int, Vector)]
          '''
 
+    '''
+         * Locally compute the W matrix of Nystrom and its factorization W_{l}^{-1} = U * U^T.
+         def nystrom_w_mat(data_samples: Array[Array[Double]], sigma: Double): DenseMatrix[Double]
+         '''
+
+    def nystrom_w_mat(self, data_samples, sigma):
+        c = data_samples.shape[0]
+
+        l = math.ceil(c * 0.5)
+
+        ## Compute the W matrix of Nystrom method
+        # w_mat = DenseMatrix.zeros[Double](c, c)
+        w_mat = np.array([[0] * c] * c)
+        data_samplesX = data_samples.evaluate(data_samples.x)
+        for j in range(c):
+            for i in range(c):
+                w_mat[i, j] = self.rbf(data_samplesX[i], data_samplesX[j], sigma)
+
+        ## Compute matrix U such that U * U^T = W_{l}^{-1}
+        U,S,V = svd.reduce(w_mat, full_matrices=False)
+
+        # u_mat = U(::, 0 until l) # get matrix where only the first l values of every column is returned
+        # u_mat = U[0:l,:]
+        u_mat = U[:,0:l]
+
+        # s_arr = S(0 until l).toArray.map(lambda s: 1 / math.sqrt(s))
+        s_arr = S[0:l]
+        s_arr.map(lambda s: 1 / math.sqrt(s))
+
+        for j in range(0, l):
+            # u_mat(::, j) *= s_arr(j)
+            u_mat[:,j] = u_mat[:,j] * s_arr[j]
+        return u_mat
+
     def nystrom(self, label_vector_rdd, c, sigma):
-        n = label_vector_rdd.count
+        n = label_vector_rdd.shape[0]
 
         ## Randomly sample about c points from the dataset
         frac = c / n
@@ -144,24 +178,27 @@ class KernelMedoids :
         # rbf_fun = (x1: Array[Double], x2: Array[Array[Double]])
 
         # c_mat_rdd = label_vector_rdd
-        # .map(pair= > (pair._1, broadcast_rbf.value(pair._2, broadcast_samples.value)))
-        # .map(pair= > (pair._1, new DenseVector(pair._2)))
-        c_mat_rdd = label_vector_rdd
-        .map(lambda pair: self.rbf2(pair[1], data_samples) )
-        .map(pair= > (pair._1, new DenseVector(pair._2)))
+        # .map(pair => (pair._1, broadcast_rbf.value(pair._2, broadcast_samples.value)))
+        # .map(pair => (pair._1, new DenseVector(pair._2)))
+        # c_mat_rdd = label_vector_rdd.apply(lambda row: self.rbf2(row, data_samples) )
+        def applyRBF2(row):
+            print("A")
+            return self.rbf2(row, data_samples)
+        c_mat_rdd = label_vector_rdd.apply(applyRBF2, arguments=[label_vector_rdd.x])
+
 
         ## Compute the W matrix of the Nystrom method
         ## decompose W as: U * U^T \approx W^{-1}
-        u_mat = nystrom_w_mat(data_samples, sigma)
-        broadcast_u_mat = sc.broadcast(u_mat)
+        u_mat = self.nystrom_w_mat(data_samples, sigma)
 
-        ## Compute the features extracted by Nystrom
-        ## feature matrix is C * W^{-1/2}_{c/2}
-        nystrom_rdd = c_mat_rdd
-        .map(pair= > (pair._1, pair._2.t * broadcast_u_mat.value))
-        .map(pair= > (pair._1, Vectors.dense(pair._2.t.toArray)))
-
-        return nystrom_rdd
+        print("")
+        # ## Compute the features extracted by Nystrom
+        # ## feature matrix is C * W^{-1/2}_{c/2}
+        # nystrom_rdd = c_mat_rdd
+        # .map(lambda row: row.t * u_mat)
+        # .map(lambda row: pair._2.t)
+        #
+        # return nystrom_rdd
 
 
     '''
@@ -182,80 +219,63 @@ class KernelMedoids :
         ## max number of iterations (can be tuned)
         MAX_ITER = 100
 
+        label_vector_rdd
+
         ## Extract features by the Nystrom method
         t0 = default_timer()
 
         # nystrom_rdd: RDD[(Int, Vector)]
-        nystrom_rdd = nystrom(label_vector_rdd, c, sigma)
+        nystrom_rdd = self.nystrom(label_vector_rdd, c, sigma)
         t1 = default_timer() - t0
 
         ##label_vector_rdd.unpersist()
         print("####################################")
         print("Nystrom method costs  " + t1 + "  seconds.")
         print("####################################")
-        
+
         ## Extract s principal components from the Nystrom features
         ## The V matrix stored in a local dense matrix
         t2 = default_timer()
-        mat = new RowMatrix(nystrom_rdd.map(pair => pair._2))
-        svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
-        v_mat: Matrix = svd.V.transpose
-        broadcast_v_mat = sc.broadcast(v_mat)
-        nystrom_pca_rdd: RDD[(Int, Vector)] = nystrom_rdd
-                .map(pair => (pair._1, broadcast_v_mat.value.multiply(pair._2)))
-                .map(pair => (pair._1, Vectors.dense(pair._2.toArray)))
-                .persist()
-        nystrom_pca_rdd.count
-        t3 = default_timer() - t2
-        ##broadcast_v_mat.destroy()
-        ##nystrom_rdd.unpersist()
-        print("####################################")
-        print("PCA costs  " + t3 + "  seconds.")
-        print("####################################")
+        # mat = new RowMatrix(nystrom_rdd.map(pair => pair._2))
+        mat = nystrom_rdd
 
-        ## K-means clustering over the extracted features
-        t4 = System.nanoTime()
-        feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
-        clusters = KMeans.train(feature_rdd, k, MAX_ITER)
-        t5 = System.nanoTime()
-        time(2) = ((t5 - t4) * 1.0E-9).toString
-        print("####################################")
-        print("K-means clustering costs  " + time(2) + "  seconds.")
-        print("####################################")
-        
-        ## Predict labels
-        broadcast_clusters = sc.broadcast(clusters)
-        labels: Array[String] = nystrom_pca_rdd
-                .map(pair => (pair._1, broadcast_clusters.value.predict(pair._2)))
-                .map(pair => pair._1.toString + " " + pair._2.toString)
-                .collect()
-        
-        return (labels, time)
-    
-    '''
-     * Locally compute the W matrix of Nystrom and its factorization W_{l}^{-1} = U * U^T.
-     def nystrom_w_mat(data_samples: Array[Array[Double]], sigma: Double): DenseMatrix[Double] 
-     '''
-    def nystrom_w_mat(data_samples, sigma):
-        c = data_samples.length
-        l = math.ceil(c * 0.5).toInt
-        
-        ## Compute the W matrix of Nystrom method
-        w_mat = DenseMatrix.zeros[Double](c, c)
-        for (j <- 0 until c) {
-            for (i <- 0 until c) {
-                w_mat(i, j) = rbf(data_samples(i), data_samples(j), sigma)
-            }
-        }
-        
-        ## Compute matrix U such that U * U^T = W_{l}^{-1}
-        usv = svd.reduced(w_mat)
-        u_mat = usv.U(::, 0 until l)
-        s_arr = usv.S(0 until l).toArray.map(s => 1 / math.sqrt(s))
-        for j in range(0,l):
-            u_mat(::, j) :*= s_arr(j)
+        # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
+        U,S,V = svd(mat)
 
-        return u_mat
+        # v_mat: Matrix = svd.V.transpose
+        v_mat = V.transpose
+    #     nystrom_pca_rdd: RDD[(Int, Vector)] = nystrom_rdd
+    #             .map(pair => (pair._1, broadcast_v_mat.value.multiply(pair._2)))
+    #             .map(pair => (pair._1, Vectors.dense(pair._2.toArray)))
+    #             .persist()
+    #     nystrom_pca_rdd.count
+    #     t3 = default_timer() - t2
+    #     ##broadcast_v_mat.destroy()
+    #     ##nystrom_rdd.unpersist()
+    #     print("####################################")
+    #     print("PCA costs  " + t3 + "  seconds.")
+    #     print("####################################")
+    #
+    #     ## K-means clustering over the extracted features
+    #     t4 = System.nanoTime()
+    #     feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
+    #     clusters = KMeans.train(feature_rdd, k, MAX_ITER)
+    #     t5 = System.nanoTime()
+    #     time(2) = ((t5 - t4) * 1.0E-9).toString
+    #     print("####################################")
+    #     print("K-means clustering costs  " + time(2) + "  seconds.")
+    #     print("####################################")
+    #
+    #     ## Predict labels
+    #     broadcast_clusters = sc.broadcast(clusters)
+    #     labels: Array[String] = nystrom_pca_rdd
+    #             .map(pair => (pair._1, broadcast_clusters.value.predict(pair._2)))
+    #             .map(pair => pair._1.toString + " " + pair._2.toString)
+    #             .collect()
+    #
+    #     return (labels, time)
+
+
 
     #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
 #'''
