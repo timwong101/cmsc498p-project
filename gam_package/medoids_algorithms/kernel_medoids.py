@@ -97,25 +97,6 @@ class KernelMedoids :
         return math.exp(-1*sum_distance / (2 * sigma * sigma))
 
     '''
-     * Compute the RBF kernel functions of a vector and a collection of vectors.
-     def rbf(x1: Array[Double], x2: Array[Array[Double]], sigma: Double): Array[Double]
-     '''
-    def rbf2(self, x1, x2, sigma):
-        n = x2.length
-        kernel_arr = [0] * n
-        sigma_sq = 2 * sigma * sigma
-        dist = 0.0
-        for i in range(0, n):
-            ## squared l2 distance between x1 and x2(i)
-            dist = zip(x1,x2[i])
-            dist2 = list(map(lambda pair: pair[0] - pair[1], dist))
-            dist3 = list(map(lambda x: x * x, dist2))
-            sum_distance = sum(dist3)
-            ## RBF kernel function
-            kernel_arr[i] = math.exp(-1*dist3 / sigma_sq)
-        return kernel_arr
-
-    '''
          * The Nystrom method for approximating the RBF kernel matrix.
          * Let K be n-by-n kernel matrix. The Nystrom method approximates
          * K by C * W^{-1}_l * C^T, where we set l = c/2.
@@ -148,10 +129,11 @@ class KernelMedoids :
         ## Compute the W matrix of Nystrom method
         # w_mat = DenseMatrix.zeros[Double](c, c)
         w_mat = np.array([[0] * c] * c)
-        data_samplesX = data_samples.evaluate(data_samples.x)
+        # data_samplesX = data_samples.evaluate(data_samples.x)
+
         for j in range(c):
             for i in range(c):
-                w_mat[i, j] = self.rbf(data_samplesX[i], data_samplesX[j], sigma)
+                w_mat[i, j] = self.rbf(data_samples[i], data_samples[j], sigma)
 
         ## Compute matrix U such that U * U^T = W_{l}^{-1}
         U,S,V = svd(w_mat, full_matrices=False)
@@ -173,6 +155,38 @@ class KernelMedoids :
             u_mat[:,j] = u_mat[:,j] * s_arr[j]
         return u_mat
 
+    '''
+     * Compute the RBF kernel functions of a vector and a collection of vectors.
+     def rbf(x1: Array[Double], x2: Array[Array[Double]], sigma: Double): Array[Double]
+     '''
+    def rbf2(self, x1, x2, sigma):
+        n = x2.shape[0]
+        # print("n: ", n)
+        kernel_arr = [0] * n
+        # print("kernel_arr: ", kernel_arr)
+        sigma_sq = 2 * sigma * sigma
+        # print("sigma_sq: ", sigma_sq)
+        for i in range(0, n):
+            ## squared l2 distance between x1 and x2(i)
+            # dist = zip(x1,x2[i])
+            # dist2 = list(map(lambda pair: pair[0] - pair[1], dist))
+            # dist3 = list(map(lambda x: x * x, dist2))
+            # sum_distance = sum(dist3)
+            # print("i: ", i)
+            sum_distance = np.sqrt(np.sum((x1 - x2[i]) ** 2))
+            # print("sum_distance: ", sum_distance)
+            ## RBF kernel function
+            kernel_arr[i] = math.exp(-sum_distance / sigma_sq)
+            # print("kernel_arr[i]: ", kernel_arr[i])
+        # print("kernel_arr: ", kernel_arr)
+        # print("kernel_arr.shape: ", kernel_arr.shape)
+        return kernel_arr
+
+    def applyRBF2(self, row):
+        # print("line 207, type(row): ", type(row))
+        return self.rbf2(row, self.data_samples, self.sigma)
+
+
     def nystrom(self, label_vector_rdd, c, sigma):
         n = label_vector_rdd.shape[0]
 
@@ -182,6 +196,8 @@ class KernelMedoids :
         # broadcast_samples = sc.broadcast(data_samples)
         # RDD[(Int, Array[Double])]
         data_samples = label_vector_rdd.sample(frac=frac)
+        # data_samples = data_samples.x
+        data_samples = data_samples.evaluate(data_samples.x)
 
         ## Compute the C matrix of the Nystrom method
         # rbf_fun = (x1: Array[Double], x2: Array[Array[Double]])
@@ -189,11 +205,16 @@ class KernelMedoids :
         # c_mat_rdd = label_vector_rdd
         # .map(pair => (pair._1, broadcast_rbf.value(pair._2, broadcast_samples.value)))
         # .map(pair => (pair._1, new DenseVector(pair._2)))
-        # c_mat_rdd = label_vector_rdd.apply(lambda row: self.rbf2(row, data_samples) )
-        def applyRBF2(row):
-            print("A")
-            return self.rbf2(row, data_samples)
-        c_mat_rdd = label_vector_rdd.apply(applyRBF2, arguments=[label_vector_rdd.x])
+
+        self.data_samples = data_samples
+        self.sigma = sigma
+        c_mat_rddX = label_vector_rdd.apply(self.applyRBF2, arguments=[label_vector_rdd.x])
+
+        # c_mat_rddX = label_vector_rdd.evaluate(c_mat_rddX)
+
+        x = label_vector_rdd.evaluate(c_mat_rddX)
+        y = label_vector_rdd.evaluate(label_vector_rdd.y)
+        c_mat_rdd = vaex.from_arrays(x=x, y=y)
 
 
         ## Compute the W matrix of the Nystrom method
@@ -203,9 +224,12 @@ class KernelMedoids :
         print("")
         ## Compute the features extracted by Nystrom
         ## feature matrix is C * W^{-1/2}_{c/2}
-        nystrom_rdd = c_mat_rdd
-        .map(lambda row: row.t * u_mat)
-        .map(lambda row: pair._2.t)
+        # nystrom_rdd = c_mat_rdd.map(lambda row: row.t * u_mat).map(lambda row: pair._2.t)
+        print("")
+        def multiplyRowUMat(row):
+            print("type(row): ", type(row))
+            return row.t * u_mat
+        nystrom_rdd = c_mat_rdd.apply(multiplyRowUMat, arguments=[c_mat_rdd.x])
 
         return nystrom_rdd
 
