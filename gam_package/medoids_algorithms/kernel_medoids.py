@@ -293,15 +293,16 @@ class KernelMedoids :
         #         .map(pair => (pair._1, broadcast_v_mat.value.multiply(pair._2)))
         #         .map(pair => (pair._1, Vectors.dense(pair._2.toArray)))
 
-        # def applyRBF2(row):
-        #     print("A")
-        #     return self.rbf2(row, data_samples)
-        # c_mat_rdd = label_vector_rdd.apply(applyRBF2, arguments=[label_vector_rdd.x])
+        self.v_mat = v_mat
+
 
         # nystrom_pca_rdd = nystrom_rdd.apply(, arguments[])
-        def multiplyVMat(row):
-            return row*v_mat
-        nystrom_pca_rdd = nystrom_rdd.apply(multiplyVMat, arguments=[nystrom_rdd.x])
+
+        nystrom_pca_rddX = nystrom_rdd.apply(self.multiplyRowVMat, arguments=[nystrom_rdd.x])
+
+        x = label_vector_rdd.evaluate(nystrom_pca_rddX)
+        y = label_vector_rdd.evaluate(nystrom_rdd.y)
+        nystrom_pca_rdd = vaex.from_arrays(x=x, y=y)
         t3 = default_timer() - t2
 
 
@@ -309,26 +310,26 @@ class KernelMedoids :
         print("PCA costs  ", t3, "  seconds.")
         print("####################################")
 
-    #     ## K-means clustering over the extracted features
-    #     t4 = System.nanoTime()
-    #     feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
-    #     clusters = KMeans.train(feature_rdd, k, MAX_ITER)
-    #     t5 = System.nanoTime()
-    #     time(2) = ((t5 - t4) * 1.0E-9).toString
-    #     print("####################################")
-    #     print("K-means clustering costs  ", time(2), "  seconds.")
-    #     print("####################################")
-    #
-    #     ## Predict labels
-    #     broadcast_clusters = sc.broadcast(clusters)
-    #     labels: Array[String] = nystrom_pca_rdd
-    #             .map(pair => (pair._1, broadcast_clusters.value.predict(pair._2)))
-    #             .map(pair => pair._1.toString + " " + pair._2.toString)
-    #             .collect()
-    #
-    #     return (labels, time)
+        ## K-means clustering over the extracted features
+        t4 = default_timer()
+        # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
+        feature_rdd = x
+        # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
+        t5 = default_timer() - t2
+        print("####################################")
+        print("K-means clustering costs  ", t5, "  seconds.")
+        print("####################################")
 
+        ## Predict labels
+        # labels: Array[String] = nystrom_pca_rdd
+        #         .map(pair => (pair._1, clusters.predict(pair._2)))
+        #         .map(pair => pair._1.toString + " " + pair._2.toString)
+        #         .collect()
+        #
+        # return (labels, time)
 
+    def multiplyRowVMat(self, row):
+        return matmul(row, self.v_mat)
 
     #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
 #'''
