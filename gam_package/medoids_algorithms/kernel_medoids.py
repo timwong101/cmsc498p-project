@@ -7,6 +7,8 @@ from collections import Counter
 
 import matplotlib.pylab as plt
 import numpy as np
+from numpy import sqrt, sum, matmul
+from math import exp
 from timeit import default_timer
 import math
 from numpy.linalg import svd
@@ -94,7 +96,7 @@ class KernelMedoids :
         sum_distance = sum(dist3)
 
         ## RBF kernel function is exp( - ||x1-x2||^2 / 2 / sigma^2 )
-        return math.exp(-1*sum_distance / (2 * sigma * sigma))
+        return exp(-1*sum_distance / (2 * sigma * sigma))
 
     '''
          * The Nystrom method for approximating the RBF kernel matrix.
@@ -173,10 +175,10 @@ class KernelMedoids :
             # dist3 = list(map(lambda x: x * x, dist2))
             # sum_distance = sum(dist3)
             # print("i: ", i)
-            sum_distance = np.sqrt(np.sum((x1 - x2[i]) ** 2))
+            sum_distance = sqrt(sum((x1 - x2[i]) ** 2))
             # print("sum_distance: ", sum_distance)
             ## RBF kernel function
-            kernel_arr[i] = math.exp(-sum_distance / sigma_sq)
+            kernel_arr[i] = exp(-sum_distance / sigma_sq)
             # print("kernel_arr[i]: ", kernel_arr[i])
         # print("kernel_arr: ", kernel_arr)
         # print("kernel_arr.shape: ", kernel_arr.shape)
@@ -226,12 +228,18 @@ class KernelMedoids :
         ## feature matrix is C * W^{-1/2}_{c/2}
         # nystrom_rdd = c_mat_rdd.map(lambda row: row.t * u_mat).map(lambda row: pair._2.t)
         print("")
-        def multiplyRowUMat(row):
-            print("type(row): ", type(row))
-            return row.t * u_mat
-        nystrom_rdd = c_mat_rdd.apply(multiplyRowUMat, arguments=[c_mat_rdd.x])
+        self.u_mat = u_mat
+        nystrom_rddX = c_mat_rdd.apply(self.multiplyRowUMat, arguments=[c_mat_rdd.x]) # returned only x values
+
+        x2 = c_mat_rdd.evaluate(nystrom_rddX)
+        nystrom_rdd = vaex.from_arrays(x=x2, y=y)
 
         return nystrom_rdd
+
+    def multiplyRowUMat(self, row):
+        retVal = matmul(row, self.u_mat)
+        # print("retVal: ", retVal)
+        return retVal
 
 
     '''
@@ -270,7 +278,7 @@ class KernelMedoids :
         ## The V matrix stored in a local dense matrix
         t2 = default_timer()
         # mat = new RowMatrix(nystrom_rdd.map(pair => pair._2))
-        mat = nystrom_rdd
+        mat = nystrom_rdd.x
 
         # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
         U,S,V = svd(mat)
