@@ -28,10 +28,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.cluster import KMeans
 
 class KernelMedoids :
 
-    def __init__(self, n_clusters=1, max_iter=1000, tol=0.0001, attributions_path="../data/mushrooms.csv",
+    def __init__(self, n_clusters=1, max_iter=100, tol=0.0001, attributions_path="../data/mushrooms.csv",
                  CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1):
 
         self.attributions_path = attributions_path
@@ -315,6 +316,8 @@ class KernelMedoids :
         # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
         feature_rdd = x
         # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
+        clusters = KMeans(n_clusters=k, max_iter=self.max_iter).fit(feature_rdd)
+
         t5 = default_timer() - t2
         print("####################################")
         print("K-means clustering costs  ", t5, "  seconds.")

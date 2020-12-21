@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.cluster import KMeans
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
