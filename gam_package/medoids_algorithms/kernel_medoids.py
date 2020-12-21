@@ -55,6 +55,8 @@ class KernelMedoids :
         # files = os.listdir(cwd)  # Get all the files in that directory
         # print("Files in %r: %s" % (cwd, files))
 
+        self.applyOneOverSquareRoot_vfunc = np.vectorize(self.applyOneOverSquareRoot)
+
 
     def fit(self, X=None, plotit=False, verbose=True, attributions_path=None, datasetName='MNIST'):
 
@@ -130,6 +132,9 @@ class KernelMedoids :
          return RDD[(Int, Vector)]
          '''
 
+    def applyOneOverSquareRoot(self, s):
+        return 1 / math.sqrt(s)
+
     '''
          * Locally compute the W matrix of Nystrom and its factorization W_{l}^{-1} = U * U^T.
          def nystrom_w_mat(data_samples: Array[Array[Double]], sigma: Double): DenseMatrix[Double]
@@ -149,7 +154,7 @@ class KernelMedoids :
                 w_mat[i, j] = self.rbf(data_samplesX[i], data_samplesX[j], sigma)
 
         ## Compute matrix U such that U * U^T = W_{l}^{-1}
-        U,S,V = svd.reduce(w_mat, full_matrices=False)
+        U,S,V = svd(w_mat, full_matrices=False)
 
         # u_mat = U(::, 0 until l) # get matrix where only the first l values of every column is returned
         # u_mat = U[0:l,:]
@@ -157,7 +162,11 @@ class KernelMedoids :
 
         # s_arr = S(0 until l).toArray.map(lambda s: 1 / math.sqrt(s))
         s_arr = S[0:l]
-        s_arr.map(lambda s: 1 / math.sqrt(s))
+
+        # s_arr.map(lambda s: 1 / math.sqrt(s))
+
+        # s_arr = self.applyOneOverSquareRoot(s_arr)
+        s_arr = self.applyOneOverSquareRoot_vfunc(s_arr)
 
         for j in range(0, l):
             # u_mat(::, j) *= s_arr(j)
@@ -192,13 +201,13 @@ class KernelMedoids :
         u_mat = self.nystrom_w_mat(data_samples, sigma)
 
         print("")
-        # ## Compute the features extracted by Nystrom
-        # ## feature matrix is C * W^{-1/2}_{c/2}
-        # nystrom_rdd = c_mat_rdd
-        # .map(lambda row: row.t * u_mat)
-        # .map(lambda row: pair._2.t)
-        #
-        # return nystrom_rdd
+        ## Compute the features extracted by Nystrom
+        ## feature matrix is C * W^{-1/2}_{c/2}
+        nystrom_rdd = c_mat_rdd
+        .map(lambda row: row.t * u_mat)
+        .map(lambda row: pair._2.t)
+
+        return nystrom_rdd
 
 
     '''
@@ -219,7 +228,7 @@ class KernelMedoids :
         ## max number of iterations (can be tuned)
         MAX_ITER = 100
 
-        label_vector_rdd
+        # label_vector_rdd
 
         ## Extract features by the Nystrom method
         t0 = default_timer()
@@ -230,7 +239,7 @@ class KernelMedoids :
 
         ##label_vector_rdd.unpersist()
         print("####################################")
-        print("Nystrom method costs  " + t1 + "  seconds.")
+        print("Nystrom method costs  ", t1, "  seconds.")
         print("####################################")
 
         ## Extract s principal components from the Nystrom features
@@ -241,21 +250,29 @@ class KernelMedoids :
 
         # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
         U,S,V = svd(mat)
-
+        print("")
         # v_mat: Matrix = svd.V.transpose
         v_mat = V.transpose
-    #     nystrom_pca_rdd: RDD[(Int, Vector)] = nystrom_rdd
-    #             .map(pair => (pair._1, broadcast_v_mat.value.multiply(pair._2)))
-    #             .map(pair => (pair._1, Vectors.dense(pair._2.toArray)))
-    #             .persist()
-    #     nystrom_pca_rdd.count
-    #     t3 = default_timer() - t2
-    #     ##broadcast_v_mat.destroy()
-    #     ##nystrom_rdd.unpersist()
-    #     print("####################################")
-    #     print("PCA costs  " + t3 + "  seconds.")
-    #     print("####################################")
-    #
+        # nystrom_pca_rdd: RDD[(Int, Vector)] = nystrom_rdd
+        #         .map(pair => (pair._1, broadcast_v_mat.value.multiply(pair._2)))
+        #         .map(pair => (pair._1, Vectors.dense(pair._2.toArray)))
+
+        # def applyRBF2(row):
+        #     print("A")
+        #     return self.rbf2(row, data_samples)
+        # c_mat_rdd = label_vector_rdd.apply(applyRBF2, arguments=[label_vector_rdd.x])
+
+        # nystrom_pca_rdd = nystrom_rdd.apply(, arguments[])
+        def multiplyVMat(row):
+            return row*v_mat
+        nystrom_pca_rdd = nystrom_rdd.apply(multiplyVMat, arguments=[nystrom_rdd.x])
+        t3 = default_timer() - t2
+
+
+        print("####################################")
+        print("PCA costs  ", t3, "  seconds.")
+        print("####################################")
+
     #     ## K-means clustering over the extracted features
     #     t4 = System.nanoTime()
     #     feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
@@ -263,7 +280,7 @@ class KernelMedoids :
     #     t5 = System.nanoTime()
     #     time(2) = ((t5 - t4) * 1.0E-9).toString
     #     print("####################################")
-    #     print("K-means clustering costs  " + time(2) + "  seconds.")
+    #     print("K-means clustering costs  ", time(2), "  seconds.")
     #     print("####################################")
     #
     #     ## Predict labels
