@@ -9,6 +9,7 @@ import matplotlib.pylab as plt
 import numpy as np
 from numpy import sqrt, sum, matmul
 from math import exp
+from scipy.sparse.linalg import svds
 from timeit import default_timer
 import math
 from numpy.linalg import svd
@@ -281,10 +282,13 @@ class KernelMedoids :
         mat = nystrom_rdd.x
 
         # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
-        U,S,V = svd(mat)
+        # U,S,V = svd(mat)
+        U,S,Vt = svds(mat, k=s)
         print("")
         # v_mat: Matrix = svd.V.transpose
-        v_mat = V.transpose
+        # v_mat = V.transpose
+        v_mat = Vt
+
         # nystrom_pca_rdd: RDD[(Int, Vector)] = nystrom_rdd
         #         .map(pair => (pair._1, broadcast_v_mat.value.multiply(pair._2)))
         #         .map(pair => (pair._1, Vectors.dense(pair._2.toArray)))
