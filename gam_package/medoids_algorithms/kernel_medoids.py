@@ -1,4 +1,4 @@
-
+import sklearn
 import vaex
 from gam_package.preprocessor.preprocessor import load_data, setArguments
 import csv
@@ -81,7 +81,7 @@ class KernelMedoids :
 
         ## Perform kernel k-means with Nystrom approximation
         ## (Array[String], Array[String])
-        result = self.kernel_kmeans(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
+        centers, members = self.kernel_kmeans(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
         print("")
 
     '''
@@ -243,6 +243,11 @@ class KernelMedoids :
         # print("retVal: ", retVal)
         return retVal
 
+    def multiplyRowVMat(self, row):
+        retVal = matmul(self.v_mat, row)
+        # print("multiplyRowVMat: ", retVal)
+        return retVal
+
 
     '''
      Kernel k-means clustering with Nystrom approximation.
@@ -280,10 +285,9 @@ class KernelMedoids :
         ## The V matrix stored in a local dense matrix
         t2 = default_timer()
         # mat = new RowMatrix(nystrom_rdd.map(pair => pair._2))
-        mat = nystrom_rdd.x
+        mat = nystrom_rdd.evaluate(nystrom_rdd.x)
 
         # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
-        # U,S,V = svd(mat)
         U,S,Vt = svds(mat, k=s)
         print("")
         # v_mat: Matrix = svd.V.transpose
@@ -301,8 +305,9 @@ class KernelMedoids :
 
         nystrom_pca_rddX = nystrom_rdd.apply(self.multiplyRowVMat, arguments=[nystrom_rdd.x])
 
-        x = label_vector_rdd.evaluate(nystrom_pca_rddX)
-        y = label_vector_rdd.evaluate(nystrom_rdd.y)
+        x = nystrom_rdd.evaluate(nystrom_pca_rddX)
+        # x = nystrom_pca_rddX
+        y = nystrom_rdd.evaluate(nystrom_rdd.y)
         nystrom_pca_rdd = vaex.from_arrays(x=x, y=y)
         t3 = default_timer() - t2
 
@@ -311,12 +316,15 @@ class KernelMedoids :
         print("PCA costs  ", t3, "  seconds.")
         print("####################################")
 
+        print('The scikit-learn version is {}.'.format(sklearn.__version__))
+
         ## K-means clustering over the extracted features
         t4 = default_timer()
         # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
         feature_rdd = x
         # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
-        centers, members = KMedoids(n_clusters=k, max_iter=self.max_iter).fit(feature_rdd)
+        kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
+        centers, members = kmedoids.fit(feature_rdd)
 
         t5 = default_timer() - t4
         print("####################################")
@@ -334,13 +342,11 @@ class KernelMedoids :
         return centers, members
 
 
-
-    def multiplyRowVMat(self, row):
-        return matmul(row, self.v_mat)
-
     #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
 #'''
 
 if __name__ == '__main__':
     kernelMedoids = KernelMedoids()
-    kernelMedoids.fit()
+    centers, members = kernelMedoids.fit()
+    print("centers: ", centers)
+    print("members: ", members)
