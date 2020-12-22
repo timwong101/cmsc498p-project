@@ -140,25 +140,47 @@ def facetedRadarPlot(dfp, medoidsList):
         make_spider(row=row, title=medoidsList[row].index[0], color=my_palette(row))
     plt.show()
 
-def silhouetteAnalysis(dfp, mlist):
-    X, y = make_blobs(n_samples=500,
-                      n_features=2,
-                      centers=4,
-                      cluster_std=1,
-                      center_box=(-10.0, 10.0),
-                      shuffle=True,
-                      random_state=1)
-    clusterer = KMeans(n_clusters=3, random_state=10)
-    cluster_labels = clusterer.fit_predict(X)
-
-
+def silhouetteAnalysis(dfp, mlist, k):
     labels = []
     for i in range(len(dfp)):
         labels.append(int(dfp.iloc[i]['medoid']))
     npLabels = np.asarray(labels, dtype = np.int32)
     dfpNoMedoids = dfp.drop('medoid', 1).values
+    medoidslist = []
+    for i in range(len(mlist)):
+        medoidslist.append(mlist[i].index[0])
     avgSilhouetteScore = silhouette_score(dfpNoMedoids, npLabels)
     print("Average Silhouette Score: ", avgSilhouetteScore)
+    sample_silhouette_values = silhouette_samples(dfpNoMedoids, npLabels)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(18, 7)
+    ax.set_xlim([-0.1, 1])
+    ax.set_ylim([0, len(dfpNoMedoids) + (k + 1) * 10])
+    y_lower = 10
+    color_num = 0
+    for i in medoidslist:
+        color_num = color_num + 1
+        ith_cluster_silhouette_values = sample_silhouette_values[npLabels == i]
+        ith_cluster_silhouette_values.sort()
+
+        size_cluster_i = ith_cluster_silhouette_values.shape[0]
+        y_upper = y_lower + size_cluster_i
+        color = cm.nipy_spectral(float(color_num) / k)
+        ax.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_silhouette_values,
+                         facecolor=color, edgecolor=color, alpha=0.7)
+        ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+        y_lower = y_upper + 10
+
+    ax.set_title("The silhouette plot for the various clusters.")
+    ax.set_xlabel("The silhouette coefficient values")
+    ax.set_ylabel("Cluster label")
+    ax.axvline(x=avgSilhouetteScore, color="red", linestyle="--")
+    ax.set_yticks([])
+    ax.set_xticks([-1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+    plt.show()
+
     return avgSilhouetteScore
 
 if __name__ == '__main__':
