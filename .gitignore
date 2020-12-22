@@ -1,6 +1,8 @@
 gam_package/__pycache__/
 venv/Lib/site-packages/
 /gam_package/data/pancan.csv
+/gam_package/data/pancan_clean.csv
+gam_package/data/pancan_clean.csv
 .DS_STORE
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
@@ -85,5 +87,7 @@ fabric.properties
 */*/__pycache__/
 
 */__pycache__/
+
+venv/
 
 # git rm -rf --cached .

@@ -73,7 +73,7 @@ def facetedRadarPlot(dfp, medoidsList):
         make_spider(row=row, title=medoidsList[row].index[0], color=my_palette(row))
     plt.show()
 
-def silhouetteAnalysis(dfp, mlist):
+def silhouetteAnalysis(dfp, mlist, k):
     X, y = make_blobs(n_samples=500,
                       n_features=2,
                       centers=4,
@@ -90,9 +90,33 @@ def silhouetteAnalysis(dfp, mlist):
         labels.append(int(dfp.iloc[i]['medoid']))
     npLabels = np.asarray(labels, dtype = np.int32)
     dfpNoMedoids = dfp.drop('medoid', 1).values
+    medoidslist = []
+    for i in range(len(mlist)):
+        medoidslist.append(mlist[i].index[0])
     avgSilhouetteScore = silhouette_score(dfpNoMedoids, npLabels)
     print("Average Silhouette Score: ", avgSilhouetteScore)
-    return dfp
+    sample_silhouette_values = silhouette_samples(dfpNoMedoids, npLabels)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(18, 7)
+    ax.set_xlim([-0.1, 1])
+    ax.set_ylim([0, len(dfpNoMedoids) + (k+1)*10])
+    y_lower = 10
+    color_num = 0
+    for i in medoidslist:
+        color_num = color_num + 1
+        ith_cluster_silhouette_values = sample_silhouette_values[npLabels == i]
+        ith_cluster_silhouette_values.sort()
+
+        size_cluster_i = ith_cluster_silhouette_values.shape[0]
+        y_upper = y_lower + size_cluster_i
+        color = cm.nipy_spectral(float(color_num) / k)
+        ax.fill_betweenx(np.arrange(y_lower,y_upper), 0, ith_cluster_silhouette_values,
+                         facecolor=color, edgecolor=color, alpha = 0.7)
+
+
+
+    return avgSilhouetteScore
 
 if __name__ == '__main__':
 
