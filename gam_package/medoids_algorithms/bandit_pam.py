@@ -89,7 +89,7 @@ class BanditPAM:
             sigma = 0.01
             return self.total_data, self.feature_labels, sigma
 
-        elif args.dataset == 'data/mice_protein.csv':
+        elif args.dataset == 'data/mice_protein.csv' or '../data/mice_protein.csv':
 
             # import os
             #
@@ -877,19 +877,19 @@ class BanditPAM:
             self.members.append(members)
         return self.centers, self.members, N, imgs, self.feature_labels
 
-    def makeClusters(self, datasetName):
-        args = self.setArguments(datasetName)
+    def makeClusters(self, datasetName, num_samp):
+        args = self.setArguments(datasetName, num_samp)
         return self.build_and_swap(args)
 
 
-    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None):
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None, num_samp = 200):
         """
         Fits kmedoids with the option for plotting
         """
         if attributions_path is not None:
             self.attributions_path = attributions_path
         start = default_timer()
-        _,_, n, imgs, feature_labels = self.makeClusters(attributions_path)
+        _,_, n, imgs, feature_labels = self.makeClusters(attributions_path, num_samp)
         duration = default_timer() - start
         if plotit:
             _, ax = plt.subplots(1, 1)
@@ -910,7 +910,7 @@ class BanditPAM:
                 )
         return n, imgs, feature_labels, duration
 
-    def setArguments(self, datasetFilePath):
+    def setArguments(self, datasetFilePath, num_samp):
         parser = argparse.ArgumentParser(description=__doc__,
                                          formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('-v', '--verbose', help='print debugging output', action='count', default=0, required=False)
@@ -953,8 +953,8 @@ class BanditPAM:
             args.sample_size = 200
         elif args.dataset == 'data/wine.csv':
             args.sample_size = 30
-        elif args.dataset == 'data/mice_protein.csv':
-            args.sample_size = 100
+        elif args.dataset == 'data/mice_protein.csv' or '../data/mice_protein.csv':
+            args.sample_size = num_samp
         else:
             raise Exception("Didn't specify a valid dataset")
 

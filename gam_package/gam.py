@@ -335,7 +335,8 @@ class GAM:
             pass
         elif self.cluster_method == "bandit pam":
             banditPAM = BanditPAM()
-            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False, attributions_path = self.attributions_path)
+            n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False,
+                                                              attributions_path = self.attributions_path, num_samp=self.num_samp)
             self.duration = duration
 
             self.clustering_attributions = imgs
