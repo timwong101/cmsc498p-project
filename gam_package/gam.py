@@ -133,8 +133,11 @@ class GAM:
         # TODO: utilize appropriate encoding for categorical, non-numerical data
         df = pd.DataFrame(self.attributions, columns=self.feature_labels)
 
-        self.df = df.fillna(df.mean())
-        self.attributions = self.df.values
+        if df.isnull().values.any():
+            self.df = df.fillna(df.mean())
+            self.attributions = self.df.values
+        else:
+            self.df = df
         #pd.get_dummies(obj_df, columns=["drive_wheels"]).head()
 
     @staticmethod
@@ -360,8 +363,8 @@ class GAM:
 
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/mice_protein.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp = 200) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mushrooms.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='parallel medoids') # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

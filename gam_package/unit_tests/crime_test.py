@@ -8,7 +8,7 @@ class TestClass:
         local_attribution_path = '../data/crime.csv'
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method=None)
         g.generate()
-        print("Original Medoids Runtime: ", g.duration)
+        print("Original Medoids Algorithm Runtime: ", g.duration)
 
     def test_gam_parallel_crime_runtime(self):
         local_attribution_path = '../data/crime.csv'

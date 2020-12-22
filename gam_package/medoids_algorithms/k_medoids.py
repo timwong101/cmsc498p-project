@@ -6,11 +6,11 @@ TODO:
 - refactor and test components of implementation
 """
 from copy import deepcopy
-
+from timeit import default_timer
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import pairwise_distances
-from timeit import default_timer
+
 
 
 def _get_init_centers(n_clusters, n_samples):
