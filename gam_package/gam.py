@@ -55,7 +55,7 @@ class GAM:
         max_iter=100,
         tol=1e-3,
         num_samp = 10,
-        plot = False
+        show_plots = False
     ):
         self.attributions_path = attributions_path # file path for csv dataset
         self.cluster_method = cluster_method # string representing appropriate k-medoids algorithm
@@ -79,7 +79,7 @@ class GAM:
         self.max_iter = max_iter
         self.tol = tol
         self.num_samp = num_samp
-        self.plot = plot
+        self.show_plots = show_plots
 
         self.attributions = None # later initialized to pandas dataframe holding csv data
         self.use_normalized = use_normalized # (boolean): whether to use normalized attributions in clustering, default='True'
@@ -314,7 +314,7 @@ class GAM:
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
-            if self.plot == True:
+            if self.show_plots == True:
                 parallelPlot(dfp)
                 radarPlot(dfp, mlist)
                 facetedRadarPlot(dfp, mlist)
@@ -356,8 +356,8 @@ class GAM:
 
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/mushroom-attributions-200-samples.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method=None) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mushrooms.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam') # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

@@ -15,6 +15,7 @@ from sklearn.metrics import pairwise_distances
 import itertools
 import shlex
 from timeit import default_timer
+from gam_package import preprocessor
 
 class BanditPAM:
 
@@ -46,17 +47,20 @@ class BanditPAM:
             self.total_data = np.append(self.train_data, self.test_data, axis=0)
             self.total_labels = np.append(self.train_labels, self.test_labels, axis=0)
             return self.total_data.reshape(N, m * m) / 255, self.total_labels, sigma
+
         elif args.dataset == "SCRNA":
             file = 'person1/fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices/NUMPY_OUT/np_data.npy'
             data_ = np.load(file)
             sigma = 25
             return data_, None, sigma
+
         elif args.dataset == "SCRNAPCA":
             file = 'person1/fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices/analysis_csv/pca/projection.csv'
             df = pd.read_csv(file, sep=',', index_col=0)
             np_arr = df.to_numpy()
             sigma = 0.01
             return np_arr, None, sigma
+
         elif args.dataset == 'HOC4':
             dir_ = 'hoc_data/hoc4/trees/'
             tree_files = [dir_ + tree for tree in os.listdir(dir_) if tree != ".DS_Store"]
@@ -65,12 +69,11 @@ class BanditPAM:
                 with open(tree_f, 'rb') as fin:
                     tree = pickle.load(fin)
                     trees.append(tree)
-
             if args.verbose >= 1:
                 print("NUM TREES:", len(trees))
-
             return trees, None, 0.0
-        elif args.dataset == 'mushrooms':
+
+        elif args.dataset == 'data/mushrooms.csv':
             filepath = self.attributions_path
             self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
             with open(filepath) as attribution_file:
@@ -78,7 +81,7 @@ class BanditPAM:
             sigma = 0.01
             return self.total_data, self.feature_labels, sigma
 
-        elif args.dataset == 'wine':
+        elif args.dataset == 'data/wine.csv':
             filepath = self.attributions_path
             self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
             with open(filepath) as attribution_file:
@@ -947,7 +950,7 @@ class BanditPAM:
         elif args.dataset == 'mushrooms':
             args.sample_size = 30
         elif args.dataset == 'data/mushrooms.csv':
-            args.sample_size = 30
+            args.sample_size = 200
         elif args.dataset == 'data/wine.csv':
             args.sample_size = 30
         elif args.dataset == 'data/mice_protein.csv':
