@@ -316,9 +316,9 @@ class KernelMedoids :
         # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
         feature_rdd = x
         # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
-        clusters = KMeans(n_clusters=k, max_iter=self.max_iter).fit(feature_rdd)
+        centers, members = KMedoids(n_clusters=k, max_iter=self.max_iter).fit(feature_rdd)
 
-        t5 = default_timer() - t2
+        t5 = default_timer() - t4
         print("####################################")
         print("K-means clustering costs  ", t5, "  seconds.")
         print("####################################")
@@ -328,8 +328,12 @@ class KernelMedoids :
         #         .map(pair => (pair._1, clusters.predict(pair._2)))
         #         .map(pair => pair._1.toString + " " + pair._2.toString)
         #         .collect()
-        #
+
         # return (labels, time)
+
+        return centers, members
+
+
 
     def multiplyRowVMat(self, row):
         return matmul(row, self.v_mat)
@@ -338,6 +342,5 @@ class KernelMedoids :
 #'''
 
 if __name__ == '__main__':
-
     kernelMedoids = KernelMedoids()
     kernelMedoids.fit()

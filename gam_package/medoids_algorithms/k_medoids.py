@@ -71,7 +71,7 @@ class KMedoids:
         predict(X): predict cluster id given a test dataset.
     """
 
-    def __init__(self, n_clusters, dist_func=_get_distance, max_iter=1000, tol=0.0001):
+    def __init__(self, n_clusters=3, dist_func=_get_distance, max_iter=1000, tol=0.0001):
         self.n_clusters = n_clusters
         self.dist_func = dist_func
         self.max_iter = max_iter
@@ -115,6 +115,8 @@ class KMedoids:
                     s=250,
                     marker="*",
                 )
+
+        return self.centers, self.members
 
     def kmedoids_run(
         self, X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=True
