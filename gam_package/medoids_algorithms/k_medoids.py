@@ -10,6 +10,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import pairwise_distances
+from timeit import default_timer
 
 
 def _get_init_centers(n_clusters, n_samples):
@@ -84,7 +85,7 @@ class KMedoids:
         """
         Fits kmedoids with the option for plotting
         """
-
+        start = default_timer()
         centers, members, _, _, _ = self.kmedoids_run(
             X,
             self.n_clusters,
@@ -93,6 +94,7 @@ class KMedoids:
             tol=self.tol,
             verbose=verbose,
         )
+        duration = default_timer() - start
 
         # set centers as instance attributes
         self.centers = centers
@@ -116,7 +118,7 @@ class KMedoids:
                     marker="*",
                 )
 
-        return self.centers, self.members
+        return self.centers, self.members, duration
 
     def kmedoids_run(
         self, X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=True

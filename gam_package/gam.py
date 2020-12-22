@@ -132,6 +132,9 @@ class GAM:
 
         # TODO: utilize appropriate encoding for categorical, non-numerical data
         df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+
+        self.df = df.fillna(df.mean())
+        self.attributions = self.df.values
         #pd.get_dummies(obj_df, columns=["drive_wheels"]).head()
 
     @staticmethod
@@ -284,8 +287,9 @@ class GAM:
                 max_iter=self.max_iter,
                 tol=self.tol,
             )
-            clusters.fit(self.clustering_attributions, verbose=False)
+            _, _, duration = clusters.fit(self.clustering_attributions, verbose=False)
 
+            self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
@@ -295,16 +299,16 @@ class GAM:
             X_norm = (X - X.min()) / (X.max() - X.min())
             lda = LDA(n_components=2)  # 2-dimensional LDA
             lda_transformed = pd.DataFrame(lda.fit_transform(X_norm, y))
+            if self.show_plots:
+                # Plot all three series
+                plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
+                plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
+                plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
 
-            # Plot all three series
-            plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
-            plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
-            plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
-
-            # Display legend and show plot
-            plt.legend(loc=3)
-            plt.show()
-            print("")
+                # Display legend and show plot
+                plt.legend(loc=3)
+                plt.show()
+                print("")
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
@@ -314,7 +318,7 @@ class GAM:
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
-            if self.show_plots == True:
+            if self.show_plots:
                 parallelPlot(dfp)
                 radarPlot(dfp, mlist)
                 facetedRadarPlot(dfp, mlist)
@@ -356,8 +360,8 @@ class GAM:
 
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/mushrooms.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam') # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mice_protein.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp = 200) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

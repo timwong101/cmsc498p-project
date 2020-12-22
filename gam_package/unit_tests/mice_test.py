@@ -4,6 +4,12 @@ from gam_package.gam import GAM
 
 class TestClass:
 
+    def test_gam_kmedoids_mice_runtime(self):
+        local_attribution_path = '../data/mice_protein.csv'
+        g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method=None)
+        g.generate()
+        print("Original Medoids Runtime: ", g.duration)
+
     def test_gam_parallel_mice_runtime(self):
         local_attribution_path = '../data/mice_protein.csv'
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="parallel medoids")
