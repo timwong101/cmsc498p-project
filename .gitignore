@@ -86,4 +86,6 @@ fabric.properties
 
 */__pycache__/
 
+venv/
+
 # git rm -rf --cached .

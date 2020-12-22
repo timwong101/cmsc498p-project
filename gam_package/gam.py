@@ -54,6 +54,8 @@ class GAM:
         scoring_method=None,
         max_iter=100,
         tol=1e-3,
+        num_samp = 10,
+        plot = False
     ):
         self.attributions_path = attributions_path # file path for csv dataset
         self.cluster_method = cluster_method # string representing appropriate k-medoids algorithm
@@ -76,6 +78,8 @@ class GAM:
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.tol = tol
+        self.num_samp = num_samp
+        self.plot = plot
 
         self.attributions = None # later initialized to pandas dataframe holding csv data
         self.use_normalized = use_normalized # (boolean): whether to use normalized attributions in clustering, default='True'
@@ -304,15 +308,17 @@ class GAM:
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
-            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False, attributions_path=self.attributions_path)
+            n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False,
+                                                   attributions_path=self.attributions_path, n_clusters = self.n_clusters)
             self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
-            parallelPlot(dfp)
-            radarPlot(dfp, mlist)
-            facetedRadarPlot(dfp, mlist)
-            silhouetteAnalysis(dfp, mlist)
+            if self.plot == True:
+                parallelPlot(dfp)
+                radarPlot(dfp, mlist)
+                facetedRadarPlot(dfp, mlist)
+            self.avg_silhouette_score = silhouetteAnalysis(dfp, mlist)
 
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids(dist_func_type=self.dist_func_type, dist_func=euclidean_distance)

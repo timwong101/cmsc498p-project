@@ -159,7 +159,7 @@ def silhouetteAnalysis(dfp, mlist):
     dfpNoMedoids = dfp.drop('medoid', 1).values
     avgSilhouetteScore = silhouette_score(dfpNoMedoids, npLabels)
     print("Average Silhouette Score: ", avgSilhouetteScore)
-    return dfp
+    return avgSilhouetteScore
 
 if __name__ == '__main__':
 
