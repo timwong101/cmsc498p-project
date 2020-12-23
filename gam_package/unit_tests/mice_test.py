@@ -3,7 +3,7 @@ import pytest
 from gam_package.gam import GAM
 
 class TestClass:
-
+    """
     def test_gam_kmedoids_mice_runtime(self):
         local_attribution_path = '../data/mice_protein.csv'
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method=None)
@@ -21,7 +21,7 @@ class TestClass:
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="ranked medoids")
         g.generate()
         print("Ranked Medoids Runtime: ", g.duration)
-
+    """
     def test_gam_bandit_mice_runtime_200_samples(self):
         local_attribution_path = '../data/mice_protein.csv'
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="bandit pam", num_samp=200)
@@ -34,6 +34,7 @@ class TestClass:
         g.generate()
         print("BanditPAM 700 Runtime: ", g.duration)
 
+    """
     def test_gam_parallel_mice_bestk(self):
         local_attribution_path = '../data/mice_protein.csv'
         bestClusterNumber = 0
@@ -46,3 +47,4 @@ class TestClass:
                 bestClusterNumber = k
         print("Best Number of Clusters: ", bestClusterNumber)
         print("Best Silhouette Score:, ", bestScore)
+    """

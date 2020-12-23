@@ -363,8 +363,8 @@ class GAM:
 
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/crime.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='parallel medoids') # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mushrooms.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method=None) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes

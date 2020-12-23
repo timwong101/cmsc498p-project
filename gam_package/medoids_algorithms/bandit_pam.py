@@ -81,7 +81,7 @@ class BanditPAM:
             sigma = 0.01
             return self.total_data, self.feature_labels, sigma
 
-        elif args.dataset == ('data/wine_clean.csv' or '../data/wine_clean.csv'):
+        elif args.dataset == 'data/wine_clean.csv' or args.dataset == '../data/wine_clean.csv':
             filepath = self.attributions_path
             self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
             with open(filepath) as attribution_file:
@@ -89,7 +89,7 @@ class BanditPAM:
             sigma = 0.01
             return self.total_data, self.feature_labels, sigma
 
-        elif args.dataset == ('data/mice_protein.csv' or '../data/mice_protein.csv'):
+        elif args.dataset == 'data/mice_protein.csv' or args.dataset == '../data/mice_protein.csv':
             print("hello")
             # import os
             #
@@ -105,7 +105,7 @@ class BanditPAM:
             self.total_data = np.nan_to_num(self.total_data)
             return self.total_data, self.feature_labels, sigma
 
-        elif args.dataset == ('data/crime.csv' or '../data/crime.csv'):
+        elif args.dataset == 'data/crime.csv' or args.dataset == '../data/crime.csv':
             filepath = self.attributions_path
             self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
             with open(filepath) as attribution_file:
@@ -959,11 +959,11 @@ class BanditPAM:
             args.sample_size = 30
         elif args.dataset == 'data/mushrooms.csv':
             args.sample_size = 200
-        elif args.dataset == ('data/wine_clean.csv' or '../data/wine_clean.csv'):
+        elif args.dataset == 'data/wine_clean.csv' or args.dataset == '../data/wine_clean.csv':
             args.sample_size = 75
-        elif args.dataset == ('data/mice_protein.csv' or '../data/mice_protein.csv'):
+        elif args.dataset == 'data/mice_protein.csv' or args.dataset == '../data/mice_protein.csv':
             args.sample_size = num_samp
-        elif args.dataset == ('data/crime.csv' or '../data/crime.csv'):
+        elif args.dataset == 'data/crime.csv' or args.dataset == '../data/crime.csv':
             args.sample_size = num_samp
         else:
             raise Exception("Didn't specify a valid dataset")
