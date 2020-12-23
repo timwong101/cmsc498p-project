@@ -22,19 +22,18 @@ from gam_package.distance_functions.euclidean_distance import euclidean_distance
 from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
 from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
 from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
-from gam_package.medoids_algorithms.bandit_pam import BanditPAM
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-def setArguments(datasetFilePath):
+def setArguments(datasetFilePath, num_samp=200):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-v', '--verbose', help='print debugging output', action='count', default=0, required=False)
     parser.add_argument('-k', '--num_medoids', help='Number of medoids', type=int, default=3, required=False)
-    parser.add_argument('-N', '--sample_size', help='Sampling size of dataset', type=int, default=700,
+    parser.add_argument('-N', '--sample_size', help='Sampling size of dataset', type=int, default=num_samp,
                         required=False)
     parser.add_argument('-s', '--seed', help='Random seed', type=int, default=42, required=False)
     parser.add_argument('-d', '--dataset', help='Dataset to use', type=str, default='MNIST', required=False)
@@ -58,22 +57,22 @@ def setArguments(datasetFilePath):
     args.fast_pam1 = True
     args.num_medoids = 3
 
+    cwd = os.getcwd()  # Get the current working directory (cwd)
+    files = os.listdir(cwd)  # Get all the files in that directory
+    print("Files in %r: %s" % (cwd, files))
+
     if args.dataset == 'MNIST':
         pass
 
     elif args.dataset == 'mushrooms':
-        cwd = os.getcwd()  # Get the current working directory (cwd)
-        files = os.listdir(cwd)  # Get all the files in that directory
-        print("Files in %r: %s" % (cwd, files))
-
-        args.sample_size = 30
-        args.attributions_path = "../data/mushrooms.csv"
+        args.sample_size = num_samp # num_samp
+        args.attributions_path = "data/mushrooms.csv"
     elif args.dataset == 'wine':
-        args.sample_size = 30
-        args.attributions_path = "../data/wine.csv"
+        args.sample_size = num_samp
+        args.attributions_path = "data/wine.csv"
     elif args.dataset == 'mice_protein':
-        args.sample_size = 100
-        args.attributions_path = "../data/mice_protein.csv"
+        args.sample_size = num_samp
+        args.attributions_path = "data/mice_protein.csv"
     else:
         raise Exception("Didn't specify a valid dataset")
 
@@ -119,7 +118,7 @@ def load_data(args):
         with open(filepath) as attribution_file:
             feature_labels = next(csv.reader(attribution_file))
         sigma = 0.01
-        return total_data, feature_labels, sigma
+        return total_data, None, sigma, feature_labels
 
     elif args.dataset == 'mice_protein':
 
@@ -135,7 +134,7 @@ def load_data(args):
             feature_labels = next(csv.reader(attribution_file))
         sigma = 0.01
         total_data = np.nan_to_num(total_data)
-        return total_data, feature_labels, sigma
+        return total_data, None, sigma, feature_labels
 
     else:
         raise Exception("Didn't specify a valid dataset")

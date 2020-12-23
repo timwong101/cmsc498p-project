@@ -332,11 +332,14 @@ class KernelMedoids :
         # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
         feature_rdd = x
         # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
-        kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
-        centers, members, duration = kmedoids.fit(feature_rdd)
 
-        self.centers = centers
-        self.members = members
+        # kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
+        # centers, members, duration = kmedoids.fit(feature_rdd)
+        banditPAM = BanditPAM()
+        n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
+
+        self.centers = banditPAM.centers
+        self.members = banditPAM.members
 
         t5 = default_timer() - t4
         self.duration = default_timer() - t0
@@ -357,7 +360,7 @@ class KernelMedoids :
 #'''
 
 if __name__ == '__main__':
-    kernelMedoids = KernelMedoids(max_iter=2)
+    kernelMedoids = KernelMedoids(max_iter=1)
     n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName = "mushrooms")
-    # print("centers: ", centers)
-    # print("members: ", members)
+    print("centers: ", kernelMedoids.centers)
+    print("members: ", kernelMedoids.members)
