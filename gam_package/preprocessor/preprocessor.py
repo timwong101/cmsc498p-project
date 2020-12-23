@@ -91,9 +91,9 @@ def load_data(args):
     print("Files in %r: %s" % (cwd, files))
 
     cwdSplit = cwd.split("\\")
-    prependDoubleDots = False
+    prependDoubleDots = True
     if cwdSplit[-1] != 'gam_package':
-        prependDoubleDots = True
+        prependDoubleDots = False
 
     filepath = args.attributions_path
     if prependDoubleDots:
