@@ -1,3 +1,5 @@
+import csv
+
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 import pandas as pd
@@ -152,12 +154,24 @@ class ParallelMedoids:
         return n, dfp, mlist, duration
 
     def _cluster(self, attributions_path, n_clusters):
-        sc = SparkContext().getOrCreate()
-        sc.setLogLevel("OFF")
-        sqlContext = SQLContext(sc)
+        # sc = SparkContext().getOrCreate()
+        # sc.setLogLevel("OFF")
+        # sqlContext = SQLContext(sc)
+        #
+        # # sets up the initial df and initializes variables
+        # df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(attributions_path)
 
-        # sets up the initial df and initializes variables
-        df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(attributions_path)
+        #############################################################
+        # use numpy to process data from csv file, the header labels are discarded
+        self.attributions = np.genfromtxt(
+            self.attributions_path, dtype=float, delimiter=",", skip_header=1
+        )
+        # extract the feature labels
+        with open(self.attributions_path) as attribution_file:
+            self.feature_labels = next(csv.reader(attribution_file))
+        df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+        ################################################################
+
         max_iter = 10; k = n_clusters; sumOfDistances1 = float("inf")
         df = df.na.drop()
         # set medoids equal to the initial medoids

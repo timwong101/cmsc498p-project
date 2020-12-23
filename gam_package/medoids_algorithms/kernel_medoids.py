@@ -363,7 +363,7 @@ class KernelMedoids:
 # '''
 
 if __name__ == '__main__':
-    kernelMedoids = KernelMedoids(max_iter=1)
-    n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName="mushrooms")
+    kernelMedoids = KernelMedoids(max_iter=1, dataset="mushrooms")
+    n, total_data, feature_labels, duration = kernelMedoids.fit()
     print("centers: ", kernelMedoids.centers)
     print("members: ", kernelMedoids.members)
