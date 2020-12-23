@@ -56,7 +56,8 @@ class GAM:
         max_iter=100,
         tol=1e-3,
         num_samp = 10,
-        show_plots = False
+        show_plots = False,
+        dataset = None
     ):
         self.attributions_path = attributions_path # file path for csv dataset
         self.cluster_method = cluster_method # string representing appropriate k-medoids algorithm
@@ -81,6 +82,7 @@ class GAM:
         self.tol = tol
         self.num_samp = num_samp
         self.show_plots = show_plots
+        self.dataset = dataset
 
         self.attributions = None # later initialized to pandas dataframe holding csv data
         self.use_normalized = use_normalized # (boolean): whether to use normalized attributions in clustering, default='True'
@@ -386,7 +388,7 @@ class GAM:
         elif self.cluster_method == "bandit pam":
             banditPAM = BanditPAM(n_clusters=self.n_clusters)
             n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False,
-                                                              dataset='mushrooms', num_samp=self.num_samp)
+                                                              dataset=self.dataset, num_samp=self.num_samp)
             self.duration = duration
 
             self.clustering_attributions = imgs
@@ -420,9 +422,38 @@ class GAM:
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
 
         elif self.cluster_method == 'kernel medoids':
-            kernelMedoids = KernelMedoids(max_iter=2)
-            n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName='mushrooms')
+            kernelMedoids = KernelMedoids(max_iter=2, dataset=self.dataset)
+            n, total_data, feature_labels, duration = kernelMedoids.fit()
             self.duration = duration
+            self.clustering_attributions = total_data
+            self.attributions = total_data
+            self.feature_labels = feature_labels
+            # self.feature_labels = range(1, len(imgs[0]+1))
+
+            self.subpopulations = kernelMedoids.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, kernelMedoids.members)
+            self.explanations = self._get_explanations(kernelMedoids.centers)
+
+            imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+            mlist = []
+            for m in kernelMedoids.centers:
+                mlist.append(imgs_df.iloc[m].to_frame())
+            imgs_df['medoid'] = 0
+            groupsDict = {}
+            for m in kernelMedoids.centers:
+                for i in range(len(kernelMedoids.members)):
+                    if m in kernelMedoids.members[i]:
+                        groupsDict[m] = kernelMedoids.members[i]
+            for key, value in groupsDict.items():
+                imgs_df.loc[value, 'medoid'] = key
+            if self.show_plots:
+                parallelPlot(imgs_df)
+                radarPlot(imgs_df, mlist, self.attributions_path)
+                # facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+
+                self.subpopulations_indices = self.membersToSubPopulations(n, kernelMedoids.members)
+                ldaClusterPlot(kernelMedoids, self.subpopulations_indices, self.clustering_attributions)
+            self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, kernelMedoids.centers)
 
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
@@ -448,8 +479,8 @@ if __name__ == '__main__':
 
     # local_attribution_path = 'data/mushrooms.csv'
     # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
-    local_attribution_path = 'data/crime_without_states.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=5, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+
+    g = GAM(n_clusters=5, cluster_method='kernel medoids', num_samp=200, show_plots=True, dataset="crime") # initialize GAM with filename, k=number of clusters
 
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
