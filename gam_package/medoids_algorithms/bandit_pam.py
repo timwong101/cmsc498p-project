@@ -22,7 +22,7 @@ from gam_package.preprocessor.preprocessor import setArguments, load_data
 class BanditPAM:
 
     def __init__(self, n_clusters=1, max_iter=1000, tol=0.0001,
-                 attributions_path="data/mushrooms.csv"):
+                 attributions_path="data/mushrooms.csv", data=None, dataset=None):
         self.attributions_path = attributions_path
         self.n_clusters = n_clusters
         self.max_iter = max_iter
@@ -31,6 +31,8 @@ class BanditPAM:
         self.members = None
         self.DECIMAL_DIGITS = 5
         self.SIGMA_DIVISOR = 1
+        self.data = data
+        self.dataset = dataset
 
     def init_logstring(self):
         print("data_utils -> init_logstring")
@@ -737,7 +739,7 @@ class BanditPAM:
 
         return medoids, S_logstring, iter, loss
 
-    def build_and_swap(self, args):
+    def build_and_swap(self, args=None, data=None):
         print("build_and_swap")
         '''
         Run the entire BanditPAM algorithm, both the BUILD step and the SWAP step
@@ -747,9 +749,13 @@ class BanditPAM:
         final_loss = -1
         dist_mat = None
 
-        total_data, total_labels, sigma, feature_labels = load_data(args)
-        self.feature_labels = feature_labels
+        if data is None:
+            total_data, total_labels, sigma, feature_labels = load_data(args)
+        else:
+            total_data, total_labels, sigma, feature_labels = data
+
         np.random.seed(args.seed)
+        self.feature_labels = feature_labels
         if args.metric == 'PRECOMP':
             dist_mat = np.loadtxt('tree-3630.dist')
             random_indices = np.random.choice(len(total_data), size=args.sample_size, replace=False)
@@ -803,24 +809,25 @@ class BanditPAM:
         return self.centers, self.members, N, imgs, self.feature_labels
 
 
-    def makeClusters(self, datasetName, num_samp):
-        args = setArguments(datasetName, num_samp, n_clusters = self.n_clusters)
-        return self.build_and_swap(args)
+    def makeClusters(self, dataset=None, num_samp=None, data=None):
+            args = setArguments(dataset, num_samp, n_clusters=self.n_clusters)
+            return self.build_and_swap(data=data, args=args)
+
     """
-    def makeClusters(self, datasetName, num_samp, n_clusters):
-        args = self.setArguments(datasetName, num_samp, n_clusters)
+    def makeClusters(self, dataset, num_samp, n_clusters):
+        args = self.setArguments(dataset, num_samp, n_clusters)
     """
 
 
 
-    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None, num_samp = 200, dataset=None):
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None, num_samp = 200):
         """
         Fits kmedoids with the option for plotting
         """
         if attributions_path is not None:
             self.attributions_path = attributions_path
         start = default_timer()
-        _,_, n, imgs, feature_labels = self.makeClusters(dataset, num_samp)
+        _,_, n, imgs, feature_labels = self.makeClusters(data=self.data, dataset=self.dataset, num_samp=num_samp)
         duration = default_timer() - start
         if plotit:
             _, ax = plt.subplots(1, 1)
