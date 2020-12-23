@@ -30,7 +30,8 @@ import pandas as pd
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.cluster import KMeans
 
-class KernelMedoids :
+
+class KernelMedoids:
 
     def __init__(self, n_clusters=1, max_iter=100, tol=0.0001, attributions_path="../data/mushrooms.csv",
                  CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1, dataset=None):
@@ -48,7 +49,7 @@ class KernelMedoids :
         self.SKETCH_SIZE = TARGET_DIM * 10
         self.SIGMA = SIGMA
         self.dataset = dataset
-        
+
         print("####################################")
         print("cluster number = ", CLUSTER_NUM)
         print("target dimension = ", TARGET_DIM)
@@ -62,14 +63,12 @@ class KernelMedoids :
 
         self.applyOneOverSquareRoot_vfunc = np.vectorize(self.applyOneOverSquareRoot)
 
-
     def fit(self, X=None, plotit=False, verbose=True, attributions_path=None):
 
         ## Loads data
         # self.data = vaex.from_csv(self.attributions_path, copy_index = True)
 
-        datasetName = self.dataset
-        args = setArguments(datasetName)
+        args = setArguments(self.dataset)
         total_data, total_labels, sigma, feature_labels = load_data(args)
         # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
 
@@ -78,6 +77,7 @@ class KernelMedoids :
         # label_vector_rdd = df.rdd.map(pair= > (pair[0], pair[1]) )
         self.total_data = total_data
         x = total_data
+        self.sigma = sigma
 
         if total_labels is None:
             y = np.array(range(x.shape[0]))
@@ -85,10 +85,11 @@ class KernelMedoids :
             y = np.array(total_labels)
         label_vector_rdd = vaex.from_arrays(x=x, y=y)
 
+        self.data = (total_data, total_labels, sigma, feature_labels)
+
         ## Perform kernel k-means with Nystrom approximation
         ## (Array[String], Array[String])
         self.cluster(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
-        self.feature_labels = total_labels
 
         return self.n, self.total_data, self.feature_labels, self.duration
         print("")
@@ -107,7 +108,7 @@ class KernelMedoids :
         sum_distance = sum(dist3)
 
         ## RBF kernel function is exp( - ||x1-x2||^2 / 2 / sigma^2 )
-        return exp(-1*sum_distance / (2 * sigma * sigma))
+        return exp(-1 * sum_distance / (2 * sigma * sigma))
 
     '''
          * The Nystrom method for approximating the RBF kernel matrix.
@@ -149,11 +150,11 @@ class KernelMedoids :
                 w_mat[i, j] = self.rbf(data_samples[i], data_samples[j], sigma)
 
         ## Compute matrix U such that U * U^T = W_{l}^{-1}
-        U,S,V = svd(w_mat, full_matrices=False)
+        U, S, V = svd(w_mat, full_matrices=False)
 
         # u_mat = U(::, 0 until l) # get matrix where only the first l values of every column is returned
         # u_mat = U[0:l,:]
-        u_mat = U[:,0:l]
+        u_mat = U[:, 0:l]
 
         # s_arr = S(0 until l).toArray.map(lambda s: 1 / math.sqrt(s))
         s_arr = S[0:l]
@@ -165,13 +166,14 @@ class KernelMedoids :
 
         for j in range(0, l):
             # u_mat(::, j) *= s_arr(j)
-            u_mat[:,j] = u_mat[:,j] * s_arr[j]
+            u_mat[:, j] = u_mat[:, j] * s_arr[j]
         return u_mat
 
     '''
      * Compute the RBF kernel functions of a vector and a collection of vectors.
      def rbf(x1: Array[Double], x2: Array[Array[Double]], sigma: Double): Array[Double]
      '''
+
     def rbf2(self, x1, x2, sigma):
         n = x2.shape[0]
         # print("n: ", n)
@@ -198,7 +200,6 @@ class KernelMedoids :
     def applyRBF2(self, row):
         # print("line 207, type(row): ", type(row))
         return self.rbf2(row, self.data_samples, self.sigma)
-
 
     def nystrom(self, label_vector_rdd, c, sigma):
         n = label_vector_rdd.shape[0]
@@ -230,7 +231,6 @@ class KernelMedoids :
         y = label_vector_rdd.evaluate(label_vector_rdd.y)
         c_mat_rdd = vaex.from_arrays(x=x, y=y)
 
-
         ## Compute the W matrix of the Nystrom method
         ## decompose W as: U * U^T \approx W^{-1}
         u_mat = self.nystrom_w_mat(data_samples, sigma)
@@ -241,7 +241,7 @@ class KernelMedoids :
         # nystrom_rdd = c_mat_rdd.map(lambda row: row.t * u_mat).map(lambda row: pair._2.t)
         print("")
         self.u_mat = u_mat
-        nystrom_rddX = c_mat_rdd.apply(self.multiplyRowUMat, arguments=[c_mat_rdd.x]) # returned only x values
+        nystrom_rddX = c_mat_rdd.apply(self.multiplyRowUMat, arguments=[c_mat_rdd.x])  # returned only x values
 
         x2 = c_mat_rdd.evaluate(nystrom_rddX)
         nystrom_rdd = vaex.from_arrays(x=x2, y=y)
@@ -258,7 +258,6 @@ class KernelMedoids :
         # print("multiplyRowVMat: ", retVal)
         return retVal
 
-
     '''
      Kernel k-means clustering with Nystrom approximation.
      Input
@@ -273,6 +272,7 @@ class KernelMedoids :
      *  time: Array of the elapsed time of Nystrom, PCA, and k-means, respectively
      return (Array[String], Array[String])
     '''
+
     def cluster(self, label_vector_rdd, k, s, c, sigma):
         ## max number of iterations (can be tuned)
         MAX_ITER = 100
@@ -298,7 +298,7 @@ class KernelMedoids :
         mat = nystrom_rdd.evaluate(nystrom_rdd.x)
 
         # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
-        U,S,Vt = svds(mat, k=s)
+        U, S, Vt = svds(mat, k=s)
         print("")
         # v_mat: Matrix = svd.V.transpose
         # v_mat = V.transpose
@@ -310,7 +310,6 @@ class KernelMedoids :
 
         self.v_mat = v_mat
 
-
         # nystrom_pca_rdd = nystrom_rdd.apply(, arguments[])
 
         nystrom_pca_rddX = nystrom_rdd.apply(self.multiplyRowVMat, arguments=[nystrom_rdd.x])
@@ -320,7 +319,6 @@ class KernelMedoids :
         y = nystrom_rdd.evaluate(nystrom_rdd.y)
         nystrom_pca_rdd = vaex.from_arrays(x=x, y=y)
         t3 = default_timer() - t2
-
 
         print("####################################")
         print("PCA costs  ", t3, "  seconds.")
@@ -336,11 +334,14 @@ class KernelMedoids :
 
         # kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
         # centers, members, duration = kmedoids.fit(feature_rdd)
-        banditPAM = BanditPAM()
-        n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
+        # banditPAM = BanditPAM(data=self.data)
+        # n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
 
-        self.centers = banditPAM.centers
-        self.members = banditPAM.members
+        clusters = ParallelMedoids()
+        n, dfp, mlist, duration = clusters.fit(X=feature_rdd, verbose=False, n_clusters=k)
+
+        self.centers = clusters.centers
+        self.members = clusters.members
 
         t5 = default_timer() - t4
         self.duration = default_timer() - t0
@@ -356,12 +357,13 @@ class KernelMedoids :
 
         # return (labels, time)
 
+    # /mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
 
-    #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
-#'''
+
+# '''
 
 if __name__ == '__main__':
     kernelMedoids = KernelMedoids(max_iter=1)
-    n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName = "mushrooms")
+    n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName="mushrooms")
     print("centers: ", kernelMedoids.centers)
     print("members: ", kernelMedoids.members)

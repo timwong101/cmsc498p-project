@@ -77,8 +77,8 @@ def setArguments(datasetFilePath, num_samp=200, n_clusters = 3):
         args.sample_size = num_samp
         args.attributions_path = "data/crime_without_states.csv"
     else:
-        raise Exception("Didn't specify a valid dataset")
-
+        # raise Exception("Didn't specify a valid dataset")
+        print("")
 
     return args
 
@@ -94,8 +94,9 @@ def load_data(args):
     print("Files in %r: %s" % (cwd, files))
 
     cwdSplit = cwd.split("\\")
+    currentFolder = cwdSplit[-1]
     prependDoubleDots = True
-    if cwdSplit[-1] != 'gam_package':
+    if currentFolder == 'gam_package':
         prependDoubleDots = False
 
     filepath = args.attributions_path
