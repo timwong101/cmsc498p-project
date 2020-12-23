@@ -68,8 +68,7 @@ class KernelMedoids :
         ## Loads data
         # self.data = vaex.from_csv(self.attributions_path, copy_index = True)
 
-        datasetName = self.dataset
-        args = setArguments(datasetName)
+        args = setArguments(self.dataset)
         total_data, total_labels, sigma, feature_labels = load_data(args)
         # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
 
@@ -78,6 +77,7 @@ class KernelMedoids :
         # label_vector_rdd = df.rdd.map(pair= > (pair[0], pair[1]) )
         self.total_data = total_data
         x = total_data
+        self.sigma = sigma
 
         if total_labels is None:
             y = np.array(range(x.shape[0]))
@@ -85,10 +85,11 @@ class KernelMedoids :
             y = np.array(total_labels)
         label_vector_rdd = vaex.from_arrays(x=x, y=y)
 
+        self.data = (total_data, total_labels, sigma, feature_labels)
+
         ## Perform kernel k-means with Nystrom approximation
         ## (Array[String], Array[String])
         self.cluster(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
-        self.feature_labels = total_labels
 
         return self.n, self.total_data, self.feature_labels, self.duration
         print("")
@@ -336,7 +337,7 @@ class KernelMedoids :
 
         # kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
         # centers, members, duration = kmedoids.fit(feature_rdd)
-        banditPAM = BanditPAM()
+        banditPAM = BanditPAM(data=self.data)
         n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
 
         self.centers = banditPAM.centers
