@@ -82,7 +82,7 @@ class KernelMedoids :
 
         ## Perform kernel k-means with Nystrom approximation
         ## (Array[String], Array[String])
-        self.kernel_kmeans(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
+        self.cluster(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
         self.feature_labels = total_labels
 
         return self.n, self.total_data, self.feature_labels, self.duration
@@ -268,7 +268,7 @@ class KernelMedoids :
      *  time: Array of the elapsed time of Nystrom, PCA, and k-means, respectively
      return (Array[String], Array[String])
     '''
-    def kernel_kmeans(self, label_vector_rdd, k, s, c, sigma):
+    def cluster(self, label_vector_rdd, k, s, c, sigma):
         ## max number of iterations (can be tuned)
         MAX_ITER = 100
 
