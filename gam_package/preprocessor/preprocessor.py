@@ -60,20 +60,20 @@ def setArguments(datasetFilePath):
 
     if args.dataset == 'MNIST':
         pass
-    elif args.dataset == "SCRNA":
-        pass
-    elif args.dataset == "SCRNAPCA":
-        pass
-    elif args.dataset == 'HOC4':
-        pass
+
     elif args.dataset == 'mushrooms':
+        cwd = os.getcwd()  # Get the current working directory (cwd)
+        files = os.listdir(cwd)  # Get all the files in that directory
+        print("Files in %r: %s" % (cwd, files))
+
         args.sample_size = 30
-    elif args.dataset == 'data/mushrooms.csv':
+        args.attributions_path = "../data/mushrooms.csv"
+    elif args.dataset == 'wine':
         args.sample_size = 30
-    elif args.dataset == 'data/wine.csv':
-        args.sample_size = 30
-    elif args.dataset == 'data/mice_protein.csv':
+        args.attributions_path = "../data/wine.csv"
+    elif args.dataset == 'mice_protein':
         args.sample_size = 100
+        args.attributions_path = "../data/mice_protein.csv"
     else:
         raise Exception("Didn't specify a valid dataset")
 
@@ -96,48 +96,32 @@ def load_data(args):
         test_labels = mnist.test_labels()
         total_data = np.append(train_data, test_data, axis=0)
         total_labels = np.append(train_labels, test_labels, axis=0)
-        return total_data.reshape(N, m * m) / 255, total_labels, sigma
-    elif args.dataset == "SCRNA":
-        file = 'person1/fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices/NUMPY_OUT/np_data.npy'
-        data_ = np.load(file)
-        sigma = 25
-        return data_, None, sigma
-    elif args.dataset == "SCRNAPCA":
-        file = 'person1/fresh_68k_pbmc_donor_a_filtered_gene_bc_matrices/analysis_csv/pca/projection.csv'
-        df = pd.read_csv(file, sep=',', index_col=0)
-        np_arr = df.to_numpy()
-        sigma = 0.01
-        return np_arr, None, sigma
-    elif args.dataset == 'HOC4':
-        dir_ = 'hoc_data/hoc4/trees/'
-        tree_files = [dir_ + tree for tree in os.listdir(dir_) if tree != ".DS_Store"]
-        trees = []
-        for tree_f in sorted(tree_files):
-            with open(tree_f, 'rb') as fin:
-                tree = pickle.load(fin)
-                trees.append(tree)
+        feature_labels = range(784)
+        return total_data.reshape(N, m * m) / 255, total_labels, sigma, feature_labels
 
-        if args.verbose >= 1:
-            print("NUM TREES:", len(trees))
-
-        return trees, None, 0.0
     elif args.dataset == 'mushrooms':
-        filepath = self.attributions_path
-        self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
+
+        cwd = os.getcwd()  # Get the current working directory (cwd)
+        files = os.listdir(cwd)  # Get all the files in that directory
+        print("Files in %r: %s" % (cwd, files))
+
+        filepath = args.attributions_path
+        total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
-            self.feature_labels = next(csv.reader(attribution_file))
+            feature_labels = next(csv.reader(attribution_file))
         sigma = 0.01
-        return self.total_data, self.feature_labels, sigma
+        # unsupervised, so no total_labels
+        return total_data, None, sigma, feature_labels
 
     elif args.dataset == 'wine':
-        filepath = self.attributions_path
-        self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
+        filepath = args.attributions_path
+        total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
-            self.feature_labels = next(csv.reader(attribution_file))
+            feature_labels = next(csv.reader(attribution_file))
         sigma = 0.01
-        return self.total_data, self.feature_labels, sigma
+        return total_data, feature_labels, sigma
 
-    elif args.dataset == 'data/mice_protein.csv':
+    elif args.dataset == 'mice_protein':
 
         # import os
         #
@@ -145,13 +129,13 @@ def load_data(args):
         # files = os.listdir(cwd)  # Get all the files in that directory
         # print("Files in %r: %s" % (cwd, files))
 
-        filepath = self.attributions_path
-        self.total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
+        filepath = args.attributions_path
+        total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
-            self.feature_labels = next(csv.reader(attribution_file))
+            feature_labels = next(csv.reader(attribution_file))
         sigma = 0.01
-        self.total_data = np.nan_to_num(self.total_data)
-        return self.total_data, self.feature_labels, sigma
+        total_data = np.nan_to_num(total_data)
+        return total_data, feature_labels, sigma
 
     else:
         raise Exception("Didn't specify a valid dataset")

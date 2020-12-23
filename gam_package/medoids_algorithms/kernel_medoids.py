@@ -69,7 +69,7 @@ class KernelMedoids :
 
         datasetName = datasetName
         args = setArguments(datasetName)
-        total_data, total_labels, sigma = load_data(args)
+        total_data, total_labels, sigma, feature_labels = load_data(args)
         # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
 
         ## Parse the data to get labels and features
@@ -77,7 +77,11 @@ class KernelMedoids :
         # label_vector_rdd = df.rdd.map(pair= > (pair[0], pair[1]) )
         self.total_data = total_data
         x = total_data
-        y = total_labels
+
+        if total_labels is None:
+            y = np.array(range(x.shape[0]))
+        else:
+            y = np.array(total_labels)
         label_vector_rdd = vaex.from_arrays(x=x, y=y)
 
         ## Perform kernel k-means with Nystrom approximation
@@ -329,7 +333,7 @@ class KernelMedoids :
         feature_rdd = x
         # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
         kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
-        centers, members = kmedoids.fit(feature_rdd)
+        centers, members, duration = kmedoids.fit(feature_rdd)
 
         self.centers = centers
         self.members = members
@@ -353,7 +357,7 @@ class KernelMedoids :
 #'''
 
 if __name__ == '__main__':
-    kernelMedoids = KernelMedoids()
-    centers, members = kernelMedoids.fit()
-    print("centers: ", centers)
-    print("members: ", members)
+    kernelMedoids = KernelMedoids(max_iter=2)
+    n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName = "mushrooms")
+    # print("centers: ", centers)
+    # print("members: ", members)
