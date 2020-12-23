@@ -377,6 +377,7 @@ class GAM:
             self.subpopulations = banditPAM.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, banditPAM.members)
             self.explanations = self._get_explanations(banditPAM.centers)
+
             imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
             mlist = []
             for m in banditPAM.centers:
@@ -393,7 +394,9 @@ class GAM:
                 parallelPlot(imgs_df)
                 radarPlot(imgs_df, mlist, self.attributions_path)
                 facetedRadarPlot(imgs_df, mlist, self.attributions_path)
-                ldaClusterPlot(banditPAM, self.subpopulations, self.clustering_attributions)
+
+                self.subpopulations_indices = self.membersToSubPopulations(n, banditPAM.members)
+                ldaClusterPlot(banditPAM, self.subpopulations_indices, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
 
         else: # use passed in cluster_method and pass in GAM itself
@@ -419,7 +422,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     # local_attribution_path = 'data/mushrooms.csv'
     # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
-    local_attribution_path = 'data/mice_protein.csv.csv'
+    local_attribution_path = 'data/mice_protein.csv'
     g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
