@@ -28,7 +28,7 @@ import pandas as pd
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-def setArguments(datasetFilePath, num_samp=200):
+def setArguments(datasetFilePath, num_samp=200, n_clusters = 3):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-v', '--verbose', help='print debugging output', action='count', default=0, required=False)
@@ -55,7 +55,7 @@ def setArguments(datasetFilePath, num_samp=200):
     args.dataset = datasetFilePath
     args.metric = 'L2'
     args.fast_pam1 = True
-    args.num_medoids = 3
+    args.num_medoids = n_clusters
 
     cwd = os.getcwd()  # Get the current working directory (cwd)
     files = os.listdir(cwd)  # Get all the files in that directory

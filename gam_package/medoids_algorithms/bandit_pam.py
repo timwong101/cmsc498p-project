@@ -802,19 +802,25 @@ class BanditPAM:
             self.members.append(members)
         return self.centers, self.members, N, imgs, self.feature_labels
 
+
     def makeClusters(self, datasetName, num_samp):
-        args = setArguments(datasetName, num_samp)
+        args = setArguments(datasetName, num_samp, n_clusters = self.n_clusters)
         return self.build_and_swap(args)
+    """
+    def makeClusters(self, datasetName, num_samp, n_clusters):
+        args = self.setArguments(datasetName, num_samp, n_clusters)
+    """
 
 
-    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None, num_samp = 200):
+
+    def fit(self, X = None, plotit=False, verbose=True, attributions_path = None, num_samp = 200, dataset=None):
         """
         Fits kmedoids with the option for plotting
         """
         if attributions_path is not None:
             self.attributions_path = attributions_path
         start = default_timer()
-        _,_, n, imgs, feature_labels = self.makeClusters(attributions_path, num_samp)
+        _,_, n, imgs, feature_labels = self.makeClusters(dataset, num_samp)
         duration = default_timer() - start
         if plotit:
             _, ax = plt.subplots(1, 1)
@@ -834,29 +840,6 @@ class BanditPAM:
                     marker="*",
                 )
         return n, imgs, feature_labels, duration
-
-
-
-        # args.dataset = datasetFilePath
-        # args.metric = 'L2'
-        # args.fast_pam1 = True
-        # args.num_medoids = 3
-
-        # if args.dataset == 'MNIST':
-        #     pass
-        # elif args.dataset == 'mushrooms':
-        #     args.sample_size = 30
-        # elif args.dataset == 'data/mushrooms.csv':
-        #     args.sample_size = 200
-        # elif args.dataset == 'data/wine_clean.csv' or args.dataset == '../data/wine_clean.csv':
-        #     args.sample_size = 75
-        # elif args.dataset == 'data/mice_protein.csv' or args.dataset == '../data/mice_protein.csv':
-        #     args.sample_size = num_samp
-        # elif args.dataset == 'data/crime.csv' or args.dataset == '../data/crime.csv' \
-        #     or args.dataset == '../data/crime_without_states.csv' or args.dataset == 'data/crime_without_states.csv':
-        #     args.sample_size = num_samp
-        # else:
-        #     raise Exception("Didn't specify a valid dataset")
 
 
 

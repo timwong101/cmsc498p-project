@@ -16,6 +16,7 @@ from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRada
     ldaClusterPlot
 from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
 from gam_package.medoids_algorithms.bandit_pam import BanditPAM
+from gam_package.medoids_algorithms.kernel_medoids import KernelMedoids
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -329,11 +330,6 @@ class GAM:
             self.avg_silhouette_score = silhouetteAnalysis(k_df, self.n_clusters, k_medoids.centers)
 
 
-
-            if self.show_plots:
-                ldaClusterPlot(k_medoids, self.subpopulations, self.clustering_attributions)
-
-
                 # # Plot all three series
                 # plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
                 # plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
@@ -388,9 +384,9 @@ class GAM:
             pass
 
         elif self.cluster_method == "bandit pam":
-            banditPAM = BanditPAM()
+            banditPAM = BanditPAM(n_clusters=self.n_clusters)
             n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False,
-                                                              attributions_path = self.attributions_path, num_samp=self.num_samp)
+                                                              dataset='mushrooms', num_samp=self.num_samp)
             self.duration = duration
 
             self.clustering_attributions = imgs
@@ -417,11 +413,16 @@ class GAM:
             if self.show_plots:
                 parallelPlot(imgs_df)
                 radarPlot(imgs_df, mlist, self.attributions_path)
-                facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+                #facetedRadarPlot(imgs_df, mlist, self.attributions_path)
 
                 self.subpopulations_indices = self.membersToSubPopulations(n, banditPAM.members)
                 ldaClusterPlot(banditPAM, self.subpopulations_indices, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
+
+        elif self.cluster_method == 'kernel medoids':
+            kernelMedoids = KernelMedoids(max_iter=2)
+            n, total_data, feature_labels, duration = kernelMedoids.fit(datasetName='mushrooms')
+            self.duration = duration
 
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
@@ -447,8 +448,8 @@ if __name__ == '__main__':
 
     # local_attribution_path = 'data/mushrooms.csv'
     # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
-    local_attribution_path = 'data/mice_protein.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/crime_without_states.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=5, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
 
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified

@@ -4,7 +4,7 @@ from gam_package.gam import GAM
 
 
 class TestClass:
-
+    """
     def test_gam_kmedoids_mushrooms_runtime(self):
         local_attribution_path = 'data/mushrooms.csv'
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method=None)
@@ -28,7 +28,13 @@ class TestClass:
         g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="bandit pam")
         g.generate()
         print("BanditPAM Runtime: ", g.duration)
-
+    """
+    def test_gam_kernel_mushrooms_runtime(self):
+        local_attribution_path = 'data/mushrooms.csv'
+        g = GAM(attributions_path=local_attribution_path, n_clusters=3, cluster_method="kernel medoids")
+        g.generate()
+        print("Kernel Runtime: ", g.duration)
+    """
     def test_gam_parallel_mushrooms_bestk(self):
         local_attribution_path = 'data/mushrooms.csv'
         bestClusterNumber = 0
@@ -41,3 +47,4 @@ class TestClass:
                 bestClusterNumber = k
         print("Best Number of Clusters: ", bestClusterNumber)
         print("Best Silhouette Score:, ", bestScore)
+    """
