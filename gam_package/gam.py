@@ -325,7 +325,7 @@ class GAM:
                 parallelPlot(dfp)
                 radarPlot(dfp, mlist, self.attributions_path)
                 facetedRadarPlot(dfp, mlist, self.attributions_path)
-            self.avg_silhouette_score = silhouetteAnalysis(dfp, mlist, self.n_clusters)
+            self.avg_silhouette_score = silhouetteAnalysis(dfp, self.n_clusters, clusters.centers)
 
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids(dist_func_type=self.dist_func_type, dist_func=euclidean_distance)
@@ -354,6 +354,24 @@ class GAM:
             self.subpopulations = banditPAM.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, banditPAM.members)
             self.explanations = self._get_explanations(banditPAM.centers)
+            imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+            mlist = []
+            for m in banditPAM.centers:
+                mlist.append(imgs_df.iloc[m].to_frame())
+            imgs_df['medoid'] = 0
+            groupsDict = {}
+            for m in banditPAM.centers:
+                for i in range(len(banditPAM.members)):
+                    if m in banditPAM.members[i]:
+                        groupsDict[m] = banditPAM.members[i]
+            for key, value in groupsDict.items():
+                imgs_df.loc[value, 'medoid'] = key
+            if self.show_plots:
+                parallelPlot(imgs_df)
+                radarPlot(imgs_df, mlist, self.attributions_path)
+                facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+            self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
+
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
 
@@ -377,7 +395,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
     local_attribution_path = 'data/crime_without_states.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=5, cluster_method='parallel medoids', show_plots=True) # initialize GAM with filename, k=number of clusters
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes
