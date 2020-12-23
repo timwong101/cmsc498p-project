@@ -1,3 +1,13 @@
+"""
+Main GAM file that is used throughout the codebase
+
+GAM is a class that can be initialized with the desired arguments
+
+generate is the main function that calls the clustering methods and sets up the data for plotting
+
+The other functions help the generate method create the subpopulations and explanations
+"""
+
 
 import csv
 import logging
@@ -118,12 +128,6 @@ class GAM:
             attributions (numpy.ndarray): for example, [(.2, .8), (.1, .9)]
             feature labels (tuple of labels): ("height", "weight")
         """
-        """
-        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data"
-        raw_data = urllib.urlopen(url)
-        with open('csv_file.csv', 'wb') as file:
-            file.write(raw_data.read())
-        """
         # use numpy to process data from csv file, the header labels are discarded
         self.attributions = np.genfromtxt(
             self.attributions_path, dtype=float, delimiter=",", skip_header=1
@@ -133,7 +137,6 @@ class GAM:
         with open(self.attributions_path) as attribution_file:
             self.feature_labels = next(csv.reader(attribution_file))
 
-        # TODO: utilize appropriate encoding for categorical, non-numerical data
         df = pd.DataFrame(self.attributions, columns=self.feature_labels)
 
         if df.isnull().values.any():
@@ -465,11 +468,9 @@ if __name__ == '__main__':
 
     local_attribution_path = 'data/mushrooms.csv'
     g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='parallel medoids', num_samp=200, show_plots=True, dataset='crime') # initialize GAM with filename, k=number of clusters
-
     #g = GAM(n_clusters=3, cluster_method=None, num_samp=200, show_plots=True, dataset="mushrooms") # initialize GAM with filename, k=number of clusters
-
-
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
+    print("Duration: ", g.duration)
     g.subpopulation_sizes # generate subpopulation sizes
     g.explanations # generate explanations

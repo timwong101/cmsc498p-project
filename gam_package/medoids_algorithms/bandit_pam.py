@@ -1,3 +1,20 @@
+"""
+bandit_pam contains the class BanditPAM which is used to run the banditPAM algorithm based off of the paper:
+    Bandit-PAM: Almost Linear Time k-Medoids Clustering via Multi-Armed Bandits
+
+banditPAM can be initialized by GAM with the desired arguments
+
+The fit function is called from gam
+
+The fit function calls makeClusters, which sets the arguments and then runs build_and_swap
+
+build_and_swap is the main function that holds the banditPAM algorithm
+
+bandit-PAM runs in almost linear time and the time is dependent on the number of samples used in the algorithm, which
+should be less than the total number of samples
+
+"""
+
 import csv
 import os
 import sys

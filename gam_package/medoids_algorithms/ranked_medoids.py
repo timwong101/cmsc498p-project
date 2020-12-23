@@ -1,3 +1,20 @@
+"""
+ranked_medoids contains the class RankedMedoids, which is used to run the ranked algorithm based on this paper:
+    Ranked k-medoids: A fast and accurate rank-based partitioning algorithm for clustering large datasets
+
+RankedMedoids can be initialized with desired arguments from GAM
+
+The fit function is called from GAM
+
+The fit function calls cluster, which calls main
+
+main is the method that holds the ranked algorithm
+
+The algorithm creates a rank and similarity matrix once at the beginning, and then uses those tables for all future
+iterations in the update step, minimizing calculations needed
+"""
+
+
 import random
 import pandas as pd
 import matplotlib.pyplot as plt

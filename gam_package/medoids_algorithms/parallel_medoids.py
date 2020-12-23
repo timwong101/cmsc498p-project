@@ -1,3 +1,19 @@
+"""
+parallel_medoids contains the class ParallelMedoids which is used to run the parallel algorithm based off the paper:
+    Efficient Approaches for Solving the Large-Scale k-medoids Problem
+
+ParallelMedoids can be initialized by GAM
+
+The fit function is called from GAM
+
+The fit function calls cluster
+
+The cluster method run the algorithm that is used in parallel
+
+The algorithm is improved by both the multiprocessing library in Python, as well as Apache Spark
+"""
+
+
 import csv
 
 from pyspark import SparkContext
@@ -70,8 +86,8 @@ class ParallelMedoids:
     # uses a probability distribution to select better initial medoids than randomly choosing them
     def initialSeeds(self, df, k):
       N = df.count()
-      dfp = df
-      #dfp = df.toPandas()
+      #dfp = df
+      dfp = df.toPandas()
       sample = dfp.sample()
       global medoidsList
       medoidsList = []
@@ -155,13 +171,13 @@ class ParallelMedoids:
         return n, dfp, mlist, duration
 
     def _cluster(self, attributions_path, n_clusters):
-        # sc = SparkContext().getOrCreate()
-        # sc.setLogLevel("OFF")
-        # sqlContext = SQLContext(sc)
-        #
-        # # sets up the initial df and initializes variables
-        # df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(attributions_path)
+        sc = SparkContext().getOrCreate()
+        sc.setLogLevel("OFF")
+        sqlContext = SQLContext(sc)
 
+        # sets up the initial df and initializes variables
+        df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(attributions_path)
+        """
         #############################################################
         # use numpy to process data from csv file, the header labels are discarded
         self.attributions = np.genfromtxt(
@@ -172,15 +188,16 @@ class ParallelMedoids:
             self.feature_labels = next(csv.reader(attribution_file))
         df = pd.DataFrame(self.attributions, columns=self.feature_labels)
         ################################################################
-
+        """
         max_iter = 10; k = n_clusters; sumOfDistances1 = float("inf")
-        #df = df.na.drop()
-        if df.isnull().values.any():
-            df = df.fillna(df.mean())
+        df = df.na.drop()
+        #if df.isnull().values.any():
+        #    df = df.fillna(df.mean())
         # set medoids equal to the initial medoids
         medoids = self.initialSeeds(df, k)
         global nearestClustersGlobal
         dfp = df.toPandas()
+        #dfp = df
         # updates medoids until criteria is reached or the maximum number of iterations is reached
         for iter in range(0, max_iter):
             previousMedoids = copy.deepcopy(medoids)

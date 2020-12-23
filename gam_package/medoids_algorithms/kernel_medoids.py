@@ -1,3 +1,21 @@
+"""
+kernel_medodids contains the class KernelMedoids which is used to run the kernel algorithm based on the paper:
+    Randomized Clustered Nystrom for Large-Scale Kernel Machines
+
+KernelMedoids can be initialized from GAM with the desired arguments
+
+The fit function is called from GAM
+
+The fit function calls cluster which is then completes the kernel algorithm
+
+The algorithm utilizes nystroms and the vaex framework to improve efficiency
+
+After the kernel algorithm is complete, it needs to call another clustering algorithm to complete the clustering
+
+Currently that algorithm is set to be the parallel medoids algorithm
+
+"""
+
 import sklearn
 import vaex
 from gam_package.preprocessor.preprocessor import load_data, setArguments
