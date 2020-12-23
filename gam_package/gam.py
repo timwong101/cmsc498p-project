@@ -307,8 +307,32 @@ class GAM:
             # y = self.subpopulations
             # X = self.clustering_attributions
 
+
+            k_df = self.df
+            mlist = []
+            for m in k_medoids.centers:
+                mlist.append(k_df.iloc[m].to_frame())
+            k_df['medoid'] = 0
+            groupsDict = {}
+            for m in k_medoids.centers:
+                for i in range(len(k_medoids.members)):
+                    if m in k_medoids.members[i]:
+                        groupsDict[m] = k_medoids.members[i]
+            for key, value in groupsDict.items():
+                k_df.loc[value, 'medoid'] = key
+
+            if self.show_plots:
+                parallelPlot(k_df)
+                radarPlot(k_df, mlist, self.attributions_path)
+                facetedRadarPlot(k_df, mlist, self.attributions_path)
+                ldaClusterPlot(k_medoids, self.subpopulations, self.clustering_attributions)
+            self.avg_silhouette_score = silhouetteAnalysis(k_df, self.n_clusters, k_medoids.centers)
+
+
+
             if self.show_plots:
                 ldaClusterPlot(k_medoids, self.subpopulations, self.clustering_attributions)
+
 
                 # # Plot all three series
                 # plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
@@ -420,10 +444,12 @@ if __name__ == '__main__':
     print("Best Silhouette Score: ", bestScore)
 """
 if __name__ == '__main__':
+
     # local_attribution_path = 'data/mushrooms.csv'
     # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
     local_attribution_path = 'data/mice_protein.csv'
     g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
