@@ -85,6 +85,20 @@ def load_data(args):
     Load the different datasets, as a numpy matrix if possible. In the case of
     HOC4, load the datasets as a list of trees.
     '''
+
+    cwd = os.getcwd()  # Get the current working directory (cwd)
+    files = os.listdir(cwd)  # Get all the files in that directory
+    print("Files in %r: %s" % (cwd, files))
+
+    cwdSplit = cwd.split("\\")
+    prependDoubleDots = False
+    if cwdSplit[-1] != 'gam_package':
+        prependDoubleDots = True
+
+    filepath = args.attributions_path
+    if prependDoubleDots:
+        filepath = "../" + filepath
+
     if args.dataset == 'MNIST':
         N = 70000
         m = 28
@@ -100,11 +114,6 @@ def load_data(args):
 
     elif args.dataset == 'mushrooms':
 
-        cwd = os.getcwd()  # Get the current working directory (cwd)
-        files = os.listdir(cwd)  # Get all the files in that directory
-        print("Files in %r: %s" % (cwd, files))
-
-        filepath = args.attributions_path
         total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
             feature_labels = next(csv.reader(attribution_file))
@@ -113,7 +122,6 @@ def load_data(args):
         return total_data, None, sigma, feature_labels
 
     elif args.dataset == 'wine':
-        filepath = args.attributions_path
         total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
             feature_labels = next(csv.reader(attribution_file))
@@ -122,13 +130,6 @@ def load_data(args):
 
     elif args.dataset == 'mice_protein':
 
-        # import os
-        #
-        # cwd = os.getcwd()  # Get the current working directory (cwd)
-        # files = os.listdir(cwd)  # Get all the files in that directory
-        # print("Files in %r: %s" % (cwd, files))
-
-        filepath = args.attributions_path
         total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
             feature_labels = next(csv.reader(attribution_file))
