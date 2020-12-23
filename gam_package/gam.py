@@ -132,6 +132,12 @@ class GAM:
 
         # TODO: utilize appropriate encoding for categorical, non-numerical data
         df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+
+        if df.isnull().values.any():
+            self.df = df.fillna(df.mean())
+            self.attributions = self.df.values
+        else:
+            self.df = df
         #pd.get_dummies(obj_df, columns=["drive_wheels"]).head()
 
     @staticmethod
@@ -284,8 +290,9 @@ class GAM:
                 max_iter=self.max_iter,
                 tol=self.tol,
             )
-            clusters.fit(self.clustering_attributions, verbose=False)
+            _, _, duration = clusters.fit(self.clustering_attributions, verbose=False)
 
+            self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
@@ -295,16 +302,16 @@ class GAM:
             X_norm = (X - X.min()) / (X.max() - X.min())
             lda = LDA(n_components=2)  # 2-dimensional LDA
             lda_transformed = pd.DataFrame(lda.fit_transform(X_norm, y))
+            if self.show_plots:
+                # Plot all three series
+                plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
+                plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
+                plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
 
-            # Plot all three series
-            plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
-            plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
-            plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
-
-            # Display legend and show plot
-            plt.legend(loc=3)
-            plt.show()
-            print("")
+                # Display legend and show plot
+                plt.legend(loc=3)
+                plt.show()
+                print("")
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
@@ -314,11 +321,11 @@ class GAM:
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
-            if self.show_plots == True:
+            if self.show_plots:
                 parallelPlot(dfp)
-                radarPlot(dfp, mlist)
-                facetedRadarPlot(dfp, mlist)
-            self.avg_silhouette_score = silhouetteAnalysis(dfp, mlist)
+                radarPlot(dfp, mlist, self.attributions_path)
+                facetedRadarPlot(dfp, mlist, self.attributions_path)
+            self.avg_silhouette_score = silhouetteAnalysis(dfp, self.n_clusters, clusters.centers)
 
         elif self.cluster_method == "ranked medoids":
             clusters = RankedMedoids(dist_func_type=self.dist_func_type, dist_func=euclidean_distance)
@@ -347,17 +354,48 @@ class GAM:
             self.subpopulations = banditPAM.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, banditPAM.members)
             self.explanations = self._get_explanations(banditPAM.centers)
+            imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+            mlist = []
+            for m in banditPAM.centers:
+                mlist.append(imgs_df.iloc[m].to_frame())
+            imgs_df['medoid'] = 0
+            groupsDict = {}
+            for m in banditPAM.centers:
+                for i in range(len(banditPAM.members)):
+                    if m in banditPAM.members[i]:
+                        groupsDict[m] = banditPAM.members[i]
+            for key, value in groupsDict.items():
+                imgs_df.loc[value, 'medoid'] = key
+            if self.show_plots:
+                parallelPlot(imgs_df)
+                radarPlot(imgs_df, mlist, self.attributions_path)
+                facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+            self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
+
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
 
         # Use scoring method if one is provided at initialization
         if self.scoring_method:
             self.score = self.scoring_method(self)
-
+"""
+if __name__ == '__main__':
+    local_attribution_path = 'data/wine_clean.csv'
+    bestClusterNumber = 0
+    bestScore = -2
+    for k in range(2, 3):
+        g = GAM(attributions_path=local_attribution_path, n_clusters=k, cluster_method="parallel medoids")
+        g.generate()
+        if g.avg_silhouette_score > bestScore:
+            bestScore = g.avg_silhouette_score
+            bestClusterNumber = k
+    print("Best Number of Clusters: ", bestClusterNumber)
+    print("Best Silhouette Score: ", bestScore)
+"""
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/mushrooms.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam') # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/crime_without_states.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes
