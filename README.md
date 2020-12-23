@@ -4,7 +4,7 @@ Created by: Daniel Song, Timothy Wong, and Harry Hao
 
 Adapted from [Capital One's GAM GitHub](https://github.com/capitalone/global-attribution-mapping)
 
-###All of our written code can be found inside gam_package
+### All of our written code can be found inside gam_package
 
 data: Contains datasets used for testing and development purposes
 
