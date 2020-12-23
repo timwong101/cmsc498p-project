@@ -33,7 +33,7 @@ from sklearn.cluster import KMeans
 
 class KernelMedoids:
 
-    def __init__(self, n_clusters=1, max_iter=100, tol=0.0001, attributions_path="../data/mushrooms.csv",
+    def __init__(self, n_clusters=1, max_iter=100, tol=0.0001, attributions_path="data/mushrooms.csv",
                  CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1, dataset=None):
 
         self.attributions_path = attributions_path
@@ -68,8 +68,8 @@ class KernelMedoids:
         ## Loads data
         # self.data = vaex.from_csv(self.attributions_path, copy_index = True)
 
-        args = setArguments(self.dataset)
-        total_data, total_labels, sigma, feature_labels = load_data(args)
+        self.args = setArguments(self.dataset)
+        total_data, total_labels, sigma, feature_labels = load_data(self.args)
         # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
 
         ## Parse the data to get labels and features
@@ -337,7 +337,7 @@ class KernelMedoids:
         # banditPAM = BanditPAM(data=self.data)
         # n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
 
-        clusters = ParallelMedoids()
+        clusters = ParallelMedoids(attributions_path=self.args.attributions_path)
         n, dfp, mlist, duration = clusters.fit(X=feature_rdd, verbose=False, n_clusters=k)
 
         self.centers = clusters.centers
