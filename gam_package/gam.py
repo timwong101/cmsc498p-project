@@ -265,9 +265,9 @@ class GAM:
             if display:
                 plt.show()
 
-    def membersToSubPopulations(self, n, subpopulations):
+    def membersToSubPopulations(self, n, members):
         arr = np.array([0] * n)
-        for medoidIndex, subpopulation in enumerate(subpopulations):
+        for medoidIndex, subpopulation in enumerate(members):
             for row in subpopulation:
                 arr[row] = medoidIndex
         return arr
