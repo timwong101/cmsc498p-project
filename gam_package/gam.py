@@ -300,13 +300,25 @@ class GAM:
 
             # y = self.subpopulations
             # X = self.clustering_attributions
-
-
+            k_df = self.df
+            mlist = []
+            for m in clusters.centers:
+                mlist.append(k_df.iloc[m].to_frame())
+            k_df['medoid'] = 0
+            groupsDict = {}
+            for m in clusters.centers:
+                for i in range(len(clusters.members)):
+                    if m in clusters.members[i]:
+                        groupsDict[m] = clusters.members[i]
+            for key, value in groupsDict.items():
+                k_df.loc[value, 'medoid'] = key
 
             if self.show_plots:
-
+                parallelPlot(k_df)
+                radarPlot(k_df, mlist, self.attributions_path)
+                facetedRadarPlot(k_df, mlist, self.attributions_path)
                 ldaClusterPlot(clusters, self.subpopulations, self.clustering_attributions)
-
+            self.avg_silhouette_score = silhouetteAnalysis(k_df, self.n_clusters, clusters.centers)
 
 
                 # # Plot all three series
@@ -391,6 +403,7 @@ class GAM:
                 parallelPlot(imgs_df)
                 radarPlot(imgs_df, mlist, self.attributions_path)
                 facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+                ldaClusterPlot(banditPAM, self.subpopulations, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
 
         else: # use passed in cluster_method and pass in GAM itself
@@ -414,10 +427,15 @@ if __name__ == '__main__':
     print("Best Silhouette Score: ", bestScore)
 """
 if __name__ == '__main__':
+
     # local_attribution_path = 'data/mushrooms.csv'
     # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
-    local_attribution_path = 'data/mice_protein.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='ranked medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+    #local_attribution_path = 'data/mice_protein.csv'
+
+    #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
+    local_attribution_path = 'data/mushrooms.csv'
+
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method=None, num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
