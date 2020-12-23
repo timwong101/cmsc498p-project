@@ -78,6 +78,7 @@ class KernelMedoids:
         self.total_data = total_data
         x = total_data
         self.sigma = sigma
+        self.feature_labels = feature_labels
 
         if total_labels is None:
             y = np.array(range(x.shape[0]))

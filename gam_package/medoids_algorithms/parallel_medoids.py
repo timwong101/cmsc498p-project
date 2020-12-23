@@ -70,7 +70,8 @@ class ParallelMedoids:
     # uses a probability distribution to select better initial medoids than randomly choosing them
     def initialSeeds(self, df, k):
       N = df.count()
-      dfp = df.toPandas()
+      dfp = df
+      #dfp = df.toPandas()
       sample = dfp.sample()
       global medoidsList
       medoidsList = []
@@ -126,12 +127,12 @@ class ParallelMedoids:
         newMedoid = patternsInClusters.iloc[minIndex].to_frame().transpose()
         return newMedoid
 
-    def fit(self, X = None, plotit=False, verbose=True, attributions_path = '', n_clusters = 3):
+    def fit(self, X = None, plotit=False, verbose=True, n_clusters = 3):
         """
         Fits kmedoids with the option for plotting
         """
         start = default_timer()
-        _,_, n, dfp, mlist = self._cluster(attributions_path, n_clusters)
+        _,_, n, dfp, mlist = self._cluster(self.attributions_path, n_clusters)
         duration = default_timer() - start
 
         if plotit:
@@ -173,7 +174,9 @@ class ParallelMedoids:
         ################################################################
 
         max_iter = 10; k = n_clusters; sumOfDistances1 = float("inf")
-        df = df.na.drop()
+        #df = df.na.drop()
+        if df.isnull().values.any():
+            df = df.fillna(df.mean())
         # set medoids equal to the initial medoids
         medoids = self.initialSeeds(df, k)
         global nearestClustersGlobal

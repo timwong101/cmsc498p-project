@@ -316,13 +316,8 @@ class GAM:
             for m in k_medoids.centers:
                 mlist.append(k_df.iloc[m].to_frame())
             k_df['medoid'] = 0
-            groupsDict = {}
-            for m in k_medoids.centers:
-                for i in range(len(k_medoids.members)):
-                    if m in k_medoids.members[i]:
-                        groupsDict[m] = k_medoids.members[i]
-            for key, value in groupsDict.items():
-                k_df.loc[value, 'medoid'] = key
+            for i in range(len(k_medoids.members)):
+                k_df.loc[i, 'medoid'] = k_medoids.members[i]
 
             if self.show_plots:
                 parallelPlot(k_df)
@@ -343,9 +338,9 @@ class GAM:
                 # print("")
 
         elif self.cluster_method == "parallel medoids":
-            clusters = ParallelMedoids()
+            clusters = ParallelMedoids(attributions_path = self.attributions_path)
             n, dfp, mlist, duration = clusters.fit(X=self.clustering_attributions, verbose=False,
-                                                   attributions_path=self.attributions_path, n_clusters = self.n_clusters)
+                                                    n_clusters = self.n_clusters)
             self.duration = duration
             self.subpopulations = clusters.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, clusters.members)
@@ -354,6 +349,8 @@ class GAM:
                 parallelPlot(dfp)
                 radarPlot(dfp, mlist, self.attributions_path)
                 facetedRadarPlot(dfp, mlist, self.attributions_path)
+                self.subpopulations_indices = self.membersToSubPopulations(n, clusters.members)
+                ldaClusterPlot(clusters, self.subpopulations_indices, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(dfp, self.n_clusters, clusters.centers)
 
         elif self.cluster_method == "ranked medoids":
@@ -381,6 +378,8 @@ class GAM:
                 parallelPlot(rank_df)
                 radarPlot(rank_df, mlist, self.attributions_path)
                 facetedRadarPlot(rank_df, mlist, self.attributions_path)
+                self.subpopulations_indices = self.membersToSubPopulations(n, clusters.members)
+                ldaClusterPlot(clusters, self.subpopulations_indices, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(rank_df, self.n_clusters, clusters.centers)
         elif self.cluster_method == "spectral clustering":
             pass
@@ -461,26 +460,13 @@ class GAM:
         # Use scoring method if one is provided at initialization
         if self.scoring_method:
             self.score = self.scoring_method(self)
-"""
-if __name__ == '__main__':
-    local_attribution_path = 'data/wine_clean.csv'
-    bestClusterNumber = 0
-    bestScore = -2
-    for k in range(2, 3):
-        g = GAM(attributions_path=local_attribution_path, n_clusters=k, cluster_method="parallel medoids")
-        g.generate()
-        if g.avg_silhouette_score > bestScore:
-            bestScore = g.avg_silhouette_score
-            bestClusterNumber = k
-    print("Best Number of Clusters: ", bestClusterNumber)
-    print("Best Silhouette Score: ", bestScore)
-"""
+
 if __name__ == '__main__':
 
-    # local_attribution_path = 'data/mushrooms.csv'
-    # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mushrooms.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='parallel medoids', num_samp=200, show_plots=True, dataset='crime') # initialize GAM with filename, k=number of clusters
 
-    g = GAM(n_clusters=5, cluster_method='kernel medoids', num_samp=200, show_plots=True, dataset="crime") # initialize GAM with filename, k=number of clusters
+    #g = GAM(n_clusters=3, cluster_method=None, num_samp=200, show_plots=True, dataset="mushrooms") # initialize GAM with filename, k=number of clusters
 
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
