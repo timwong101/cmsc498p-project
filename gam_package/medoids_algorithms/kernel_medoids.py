@@ -339,7 +339,9 @@ class KernelMedoids :
 
         # return (labels, time)
 
-        return centers, members
+        centers, members
+
+        return self.n, imgs, feature_labels, duration
 
 
     #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data

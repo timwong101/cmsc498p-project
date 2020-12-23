@@ -119,7 +119,7 @@ class KMedoids:
         return self.centers, self.members
 
     def kmedoids_run(
-        self, X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=True
+        self, X, n_clusters, dist_func, max_iter=50, tol=0.001, verbose=True
     ):
         """Runs kmedoids algorithm with custom dist_func.
 
