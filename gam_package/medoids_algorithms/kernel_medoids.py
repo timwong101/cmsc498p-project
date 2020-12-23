@@ -75,13 +75,17 @@ class KernelMedoids :
         ## Parse the data to get labels and features
         # RDD[(Int, Array[Double])]
         # label_vector_rdd = df.rdd.map(pair= > (pair[0], pair[1]) )
+        self.total_data = total_data
         x = total_data
         y = total_labels
         label_vector_rdd = vaex.from_arrays(x=x, y=y)
 
         ## Perform kernel k-means with Nystrom approximation
         ## (Array[String], Array[String])
-        centers, members = self.kernel_kmeans(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
+        self.kernel_kmeans(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
+        self.feature_labels = total_labels
+
+        return self.n, self.total_data, self.feature_labels, self.duration
         print("")
 
     '''
@@ -193,6 +197,7 @@ class KernelMedoids :
 
     def nystrom(self, label_vector_rdd, c, sigma):
         n = label_vector_rdd.shape[0]
+        self.n = n
 
         ## Randomly sample about c points from the dataset
         frac = c / n
@@ -326,7 +331,11 @@ class KernelMedoids :
         kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
         centers, members = kmedoids.fit(feature_rdd)
 
+        self.centers = centers
+        self.members = members
+
         t5 = default_timer() - t4
+        self.duration = default_timer() - t0
         print("####################################")
         print("K-means clustering costs  ", t5, "  seconds.")
         print("####################################")
@@ -338,10 +347,6 @@ class KernelMedoids :
         #         .collect()
 
         # return (labels, time)
-
-        centers, members
-
-        return self.n, imgs, feature_labels, duration
 
 
     #/mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data

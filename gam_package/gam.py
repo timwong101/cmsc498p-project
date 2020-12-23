@@ -12,14 +12,14 @@ from gam_package.distance_functions.spearman_distance import spearman_squared_di
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
 
 from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
-from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis
+from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis, \
+    ldaClusterPlot
 from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
 from gam_package.medoids_algorithms.bandit_pam import BanditPAM
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.cluster import KMeans
 
 logging.basicConfig(
@@ -283,11 +283,12 @@ class GAM:
         # Use the distance metric and k-medoids algorithm specified
         # max_iter = maximum number of k-medoid updates
         # tol = minimum error for medoid optimum
-        if self.cluster_method is None: # use regular k-medoids
+        if self.cluster_method is None or self.cluster_method == "k medoids": # use regular k-medoids
+
             clusters = KMedoids(
                 self.n_clusters,
                 dist_func=self.dist_func,
-                max_iter=self.max_iter,
+                max_iter=5,
                 tol=self.tol,
             )
             _, _, duration = clusters.fit(self.clustering_attributions, verbose=False)
@@ -297,21 +298,26 @@ class GAM:
             self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
             self.explanations = self._get_explanations(clusters.centers)
 
-            y = self.subpopulations
-            X = self.clustering_attributions
-            X_norm = (X - X.min()) / (X.max() - X.min())
-            lda = LDA(n_components=2)  # 2-dimensional LDA
-            lda_transformed = pd.DataFrame(lda.fit_transform(X_norm, y))
-            if self.show_plots:
-                # Plot all three series
-                plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
-                plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
-                plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
+            # y = self.subpopulations
+            # X = self.clustering_attributions
 
-                # Display legend and show plot
-                plt.legend(loc=3)
-                plt.show()
-                print("")
+
+
+            if self.show_plots:
+
+                ldaClusterPlot(clusters, self.subpopulations, self.clustering_attributions)
+
+
+
+                # # Plot all three series
+                # plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
+                # plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
+                # plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
+                #
+                # # Display legend and show plot
+                # plt.legend(loc=3)
+                # plt.show()
+                # print("")
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids()
@@ -394,8 +400,8 @@ if __name__ == '__main__':
 """
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/crime_without_states.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mushrooms.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes
