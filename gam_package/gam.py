@@ -323,8 +323,8 @@ class GAM:
             self.explanations = self._get_explanations(clusters.centers)
             if self.show_plots:
                 parallelPlot(dfp)
-                radarPlot(dfp, mlist)
-                facetedRadarPlot(dfp, mlist)
+                radarPlot(dfp, mlist, self.attributions_path)
+                facetedRadarPlot(dfp, mlist, self.attributions_path)
             self.avg_silhouette_score = silhouetteAnalysis(dfp, mlist, self.n_clusters)
 
         elif self.cluster_method == "ranked medoids":
@@ -360,11 +360,24 @@ class GAM:
         # Use scoring method if one is provided at initialization
         if self.scoring_method:
             self.score = self.scoring_method(self)
-
+"""
+if __name__ == '__main__':
+    local_attribution_path = 'data/wine_clean.csv'
+    bestClusterNumber = 0
+    bestScore = -2
+    for k in range(2, 3):
+        g = GAM(attributions_path=local_attribution_path, n_clusters=k, cluster_method="parallel medoids")
+        g.generate()
+        if g.avg_silhouette_score > bestScore:
+            bestScore = g.avg_silhouette_score
+            bestClusterNumber = k
+    print("Best Number of Clusters: ", bestClusterNumber)
+    print("Best Silhouette Score: ", bestScore)
+"""
 if __name__ == '__main__':
     #local_attribution_path = 'data/mushroom-attributions-200-samples.csv' # the pathway to the data file
-    local_attribution_path = 'data/mushrooms.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method=None) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/crime_without_states.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=5, cluster_method='parallel medoids', show_plots=True) # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
     g.subpopulation_sizes # generate subpopulation sizes
