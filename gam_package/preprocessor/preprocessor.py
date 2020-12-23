@@ -78,6 +78,7 @@ def setArguments(datasetFilePath, num_samp=200, n_clusters = 3):
         args.attributions_path = "data/crime_without_states.csv"
     else:
         # raise Exception("Didn't specify a valid dataset")
+        print("")
 
     return args
 
