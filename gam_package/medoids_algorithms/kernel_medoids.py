@@ -337,11 +337,14 @@ class KernelMedoids :
 
         # kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
         # centers, members, duration = kmedoids.fit(feature_rdd)
-        banditPAM = BanditPAM(data=self.data)
-        n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
+        # banditPAM = BanditPAM(data=self.data)
+        # n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
 
-        self.centers = banditPAM.centers
-        self.members = banditPAM.members
+        clusters = ParallelMedoids()
+        n, dfp, mlist, duration = clusters.fit(X=feature_rdd, verbose=False, n_clusters=k)
+
+        self.centers = clusters.centers
+        self.members = clusters.members
 
         t5 = default_timer() - t4
         self.duration = default_timer() - t0
