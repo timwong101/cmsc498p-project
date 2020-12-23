@@ -265,6 +265,12 @@ class GAM:
             if display:
                 plt.show()
 
+    def membersToSubPopulations(self, n, subpopulations):
+        arr = np.array([0] * n)
+        for medoidIndex, subpopulation in enumerate(subpopulations):
+            for row in subpopulation:
+                arr[row] = medoidIndex
+        return arr
 
     def generate(self, distance_function=None, max_iter=1000, tol=0.0001):
         """
@@ -285,29 +291,24 @@ class GAM:
         # tol = minimum error for medoid optimum
         if self.cluster_method is None or self.cluster_method == "k medoids": # use regular k-medoids
 
-            clusters = KMedoids(
+            k_medoids = KMedoids(
                 self.n_clusters,
                 dist_func=self.dist_func,
                 max_iter=5,
                 tol=self.tol,
             )
-            _, _, duration = clusters.fit(self.clustering_attributions, verbose=False)
+            _, _, duration = k_medoids.fit(self.clustering_attributions, verbose=False)
 
             self.duration = duration
-            self.subpopulations = clusters.members
-            self.subpopulation_sizes = GAM.get_subpopulation_sizes(clusters.members)
-            self.explanations = self._get_explanations(clusters.centers)
+            self.subpopulations = k_medoids.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes(k_medoids.members)
+            self.explanations = self._get_explanations(k_medoids.centers)
 
             # y = self.subpopulations
             # X = self.clustering_attributions
 
-
-
             if self.show_plots:
-
-                ldaClusterPlot(clusters, self.subpopulations, self.clustering_attributions)
-
-
+                ldaClusterPlot(k_medoids, self.subpopulations, self.clustering_attributions)
 
                 # # Plot all three series
                 # plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
@@ -361,6 +362,7 @@ class GAM:
             self.avg_silhouette_score = silhouetteAnalysis(rank_df, self.n_clusters, clusters.centers)
         elif self.cluster_method == "spectral clustering":
             pass
+
         elif self.cluster_method == "bandit pam":
             banditPAM = BanditPAM()
             n, imgs, feature_labels, duration = banditPAM.fit(X=self.clustering_attributions, verbose=False,
@@ -391,6 +393,7 @@ class GAM:
                 parallelPlot(imgs_df)
                 radarPlot(imgs_df, mlist, self.attributions_path)
                 facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+                ldaClusterPlot(banditPAM, self.subpopulations, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
 
         else: # use passed in cluster_method and pass in GAM itself
@@ -416,8 +419,8 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     # local_attribution_path = 'data/mushrooms.csv'
     # g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='k medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
-    local_attribution_path = 'data/mice_protein.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='ranked medoids', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
+    local_attribution_path = 'data/mice_protein.csv.csv'
+    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='bandit pam', num_samp=200, show_plots=True) # initialize GAM with filename, k=number of clusters
 
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM

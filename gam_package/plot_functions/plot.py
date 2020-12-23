@@ -23,8 +23,8 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
 def ldaClusterPlot(clusters, subpopulations, clustering_attributions):
     r = lambda: random.randint(0, 255)
-    y = subpopulations
-    X = clustering_attributions
+    y = np.array(subpopulations)
+    X = np.array(clustering_attributions)
     X_norm = (X - X.min()) / (X.max() - X.min())
     lda = LDA(n_components=2)  # 2-dimensional LDA
     lda_transformed = pd.DataFrame(lda.fit_transform(X_norm, y))
