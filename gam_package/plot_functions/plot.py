@@ -1,3 +1,18 @@
+"""
+Contains severl methods designed for plotting purposes
+
+ldaClusterPlot - dimension reduction plot
+
+parallelPlot - parallel plot of all points
+
+radarPlot - singular radar plot with explanations for all medoids
+
+facetedRadarPlot - seperate radar plot for each medoid
+
+silhouetteAnalysis - performs silhouette analysis and gives a silhouette plot
+
+"""
+
 from pandas.plotting import parallel_coordinates
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
