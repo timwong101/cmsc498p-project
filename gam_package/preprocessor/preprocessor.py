@@ -73,6 +73,9 @@ def setArguments(datasetFilePath, num_samp=200, n_clusters = 3):
     elif args.dataset == 'mice_protein':
         args.sample_size = num_samp
         args.attributions_path = "data/mice_protein.csv"
+    elif args.dataset == 'crime':
+        args.sample_size = num_samp
+        args.attributions_path = "data/crime_without_states.csv"
     else:
         raise Exception("Didn't specify a valid dataset")
 
@@ -130,6 +133,14 @@ def load_data(args):
 
     elif args.dataset == 'mice_protein':
 
+        total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
+        with open(filepath) as attribution_file:
+            feature_labels = next(csv.reader(attribution_file))
+        sigma = 0.01
+        total_data = np.nan_to_num(total_data)
+        return total_data, None, sigma, feature_labels
+
+    elif args.dataset == 'crime':
         total_data = np.genfromtxt(filepath, dtype=float, delimiter=",", skip_header=1)
         with open(filepath) as attribution_file:
             feature_labels = next(csv.reader(attribution_file))

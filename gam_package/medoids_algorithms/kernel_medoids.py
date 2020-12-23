@@ -33,7 +33,7 @@ from sklearn.cluster import KMeans
 class KernelMedoids :
 
     def __init__(self, n_clusters=1, max_iter=100, tol=0.0001, attributions_path="../data/mushrooms.csv",
-                 CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1):
+                 CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1, dataset=None):
 
         self.attributions_path = attributions_path
         self.n_clusters = n_clusters
@@ -47,6 +47,7 @@ class KernelMedoids :
         self.TARGET_DIM = CLUSTER_NUM * 2
         self.SKETCH_SIZE = TARGET_DIM * 10
         self.SIGMA = SIGMA
+        self.dataset = dataset
         
         print("####################################")
         print("cluster number = ", CLUSTER_NUM)
@@ -62,12 +63,12 @@ class KernelMedoids :
         self.applyOneOverSquareRoot_vfunc = np.vectorize(self.applyOneOverSquareRoot)
 
 
-    def fit(self, X=None, plotit=False, verbose=True, attributions_path=None, datasetName='MNIST'):
+    def fit(self, X=None, plotit=False, verbose=True, attributions_path=None):
 
         ## Loads data
         # self.data = vaex.from_csv(self.attributions_path, copy_index = True)
 
-        datasetName = datasetName
+        datasetName = self.dataset
         args = setArguments(datasetName)
         total_data, total_labels, sigma, feature_labels = load_data(args)
         # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
