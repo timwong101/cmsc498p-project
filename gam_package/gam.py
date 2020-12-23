@@ -15,6 +15,7 @@ from collections import Counter
 
 import matplotlib.pylab as plt
 import numpy as np
+import dask_ml.cluster
 
 from gam_package.medoids_algorithms.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
@@ -22,6 +23,8 @@ from gam_package.distance_functions.spearman_distance import spearman_squared_di
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
 
 from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
+# from gam_package.medoids_algorithms.parallel_medoids2 import ParallelMedoids2
+from gam_package.medoids_algorithms.spectral import SpectralClustering
 from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis, \
     ldaClusterPlot
 from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
@@ -457,6 +460,20 @@ class GAM:
                 ldaClusterPlot(kernelMedoids, self.subpopulations_indices, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, kernelMedoids.centers)
 
+        elif self.cluster_method == "spectral":
+            # spectral = SpectralClustering(n_clusters=2, n_components=10)
+            # predictions = spectral.fit_predict(self.clustering_attributions)
+            #
+
+            spectral = dask_ml.cluster.SpectralClustering(n_clusters=2, n_components=100)
+            predictions = spectral.fit(self.clustering_attributions)
+
+            spectralParams = spectral.get_params()
+
+            self.subpopulations = spectral.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes(n, spectral.members)
+            self.explanations = self._get_explanations(spectral.centers)
+
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
 
@@ -468,6 +485,7 @@ if __name__ == '__main__':
 
     local_attribution_path = 'data/mushrooms.csv'
     g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='parallel medoids', num_samp=200, show_plots=True, dataset='crime') # initialize GAM with filename, k=number of clusters
+
     #g = GAM(n_clusters=3, cluster_method=None, num_samp=200, show_plots=True, dataset="mushrooms") # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified
     g.plot(num_features=7) # plot the GAM
