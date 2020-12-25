@@ -349,18 +349,21 @@ class KernelMedoids:
         t4 = default_timer()
         # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
         feature_rdd = x
-        # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
+        clusters = KMeans.train(feature_rdd, k, MAX_ITER)
 
         # kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
         # centers, members, duration = kmedoids.fit(feature_rdd)
         # banditPAM = BanditPAM(data=self.data)
         # n, total_data, feature_labels, duration = banditPAM.fit(X=feature_rdd, verbose=False)
 
-        clusters = ParallelMedoids(attributions_path=self.args.attributions_path)
-        n, dfp, mlist, duration = clusters.fit(X=feature_rdd, verbose=False, n_clusters=k)
+        # clusters = ParallelMedoids(attributions_path=self.args.attributions_path)
+        # n, dfp, mlist, duration = clusters.fit(X=feature_rdd, verbose=False, n_clusters=k)
 
-        self.centers = clusters.centers
-        self.members = clusters.members
+        # self.centers = clusters.centers
+        # self.members = clusters.members
+
+        self.centers = clusters.cluster_centers_
+        self.members = clusters.labels_
 
         t5 = default_timer() - t4
         self.duration = default_timer() - t0
