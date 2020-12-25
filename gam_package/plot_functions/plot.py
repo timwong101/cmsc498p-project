@@ -55,6 +55,25 @@ def ldaClusterPlot(clusters, subpopulations, clustering_attributions):
     plt.legend(loc=3)
     plt.show()
 
+def ldaClusterPlotByCenters(centers, subpopulations, clustering_attributions):
+    r = lambda: random.randint(0, 255)
+    y = np.array(subpopulations)
+    X = np.array(clustering_attributions)
+    X_norm = (X - X.min()) / (X.max() - X.min())
+    lda = LDA(n_components=2)  # 2-dimensional LDA
+    lda_transformed = pd.DataFrame(lda.fit_transform(X_norm, y))
+
+    lenClusters = len(centers)
+    for medoidIndex in range(lenClusters):
+        classLabel = 'Class ' + str(medoidIndex)
+        randomColorHexString = '#%02X%02X%02X' % (r(), r(), r())
+        plt.scatter(lda_transformed[y == medoidIndex][0],
+                    lda_transformed[y == medoidIndex][1],
+                    label=classLabel, c=randomColorHexString)
+    # Display legend and show plot
+    plt.legend(loc=3)
+    plt.show()
+
 
 ######################################################
 def parallelPlot(dfp):

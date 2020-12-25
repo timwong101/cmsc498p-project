@@ -32,7 +32,6 @@ from timeit import default_timer
 import math
 from numpy.linalg import svd
 
-from gam_package.medoids_algorithms.k_medoids import KMedoids
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
@@ -47,11 +46,12 @@ import pandas as pd
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.cluster import KMeans
+from sklearn_extra.cluster import KMedoids
 
 
 class KernelMedoids:
 
-    def __init__(self, n_clusters=1, max_iter=100, tol=0.0001, attributions_path="data/mushrooms.csv",
+    def __init__(self, n_clusters=3, max_iter=100, tol=0.0001, attributions_path="data/mushrooms.csv",
                  CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1, dataset=None):
 
         self.attributions_path = attributions_path
@@ -349,7 +349,7 @@ class KernelMedoids:
         t4 = default_timer()
         # feature_rdd: RDD[Vector] = nystrom_pca_rdd.map(pair => pair._2)
         feature_rdd = x
-        clusters = KMeans.train(feature_rdd, k, MAX_ITER)
+        # clusters = KMeans.train(feature_rdd, k, MAX_ITER)
 
         # kmedoids = KMedoids(n_clusters=k, max_iter=self.max_iter)
         # centers, members, duration = kmedoids.fit(feature_rdd)
@@ -362,13 +362,22 @@ class KernelMedoids:
         # self.centers = clusters.centers
         # self.members = clusters.members
 
-        self.centers = clusters.cluster_centers_
-        self.members = clusters.labels_
+        # self.centers = sfkm.cluster_centers_
+        sfkm = KMedoids(n_clusters=k, max_iter=MAX_ITER, init='k-medoids++')
+        sfkm.fit(feature_rdd)
+
+        # self.members = sfkm.labels_
+        members = [[],[],[]]
+        for rowIndex, medoidIndex in enumerate(sfkm.labels_):
+            members[medoidIndex].append(rowIndex)
+
+        self.members = members
+        self.centers = sfkm.medoid_indices_
 
         t5 = default_timer() - t4
         self.duration = default_timer() - t0
         print("####################################")
-        print("K-means clustering costs  ", t5, "  seconds.")
+        print("K-medoids clustering costs  ", t5, "  seconds.")
         print("####################################")
 
         ## Predict labels
@@ -389,3 +398,5 @@ if __name__ == '__main__':
     n, total_data, feature_labels, duration = kernelMedoids.fit()
     print("centers: ", kernelMedoids.centers)
     print("members: ", kernelMedoids.members)
+    print("medoid_indices_: ", kernelMedoids.medoid_indices)
+    print("duration: ", kernelMedoids.duration)

@@ -12,12 +12,13 @@ The other functions help the generate method create the subpopulations and expla
 import csv
 import logging
 from collections import Counter
+from timeit import default_timer
 
 import matplotlib.pylab as plt
 import numpy as np
 # import dask_ml.cluster
 
-from gam_package.medoids_algorithms.k_medoids import KMedoids
+
 from gam_package.distance_functions.kendall_tau_distance import mergeSortDistance
 from gam_package.distance_functions.spearman_distance import spearman_squared_distance
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
@@ -26,7 +27,7 @@ from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
 # from gam_package.medoids_algorithms.parallel_medoids2 import ParallelMedoids2
 from gam_package.medoids_algorithms.spectral import SpectralClustering
 from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis, \
-    ldaClusterPlot
+    ldaClusterPlot, ldaClusterPlotByCenters
 from gam_package.medoids_algorithms.ranked_medoids import RankedMedoids
 from gam_package.medoids_algorithms.bandit_pam import BanditPAM
 from gam_package.medoids_algorithms.kernel_medoids import KernelMedoids
@@ -300,10 +301,11 @@ class GAM:
         # tol = minimum error for medoid optimum
         if self.cluster_method is None or self.cluster_method == "k medoids": # use regular k-medoids
 
+            from gam_package.medoids_algorithms.k_medoids import KMedoids
             k_medoids = KMedoids(
                 self.n_clusters,
                 dist_func=self.dist_func,
-                max_iter=5,
+                max_iter=3,
                 tol=self.tol,
             )
             _, _, duration = k_medoids.fit(self.clustering_attributions, verbose=False)
@@ -332,16 +334,50 @@ class GAM:
                 ldaClusterPlot(k_medoids, self.subpopulations, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(k_df, self.n_clusters, k_medoids.centers)
 
+            print("")
 
-                # # Plot all three series
-                # plt.scatter(lda_transformed[y == 0][0], lda_transformed[y == 0][1], label='Class 1', c='red')
-                # plt.scatter(lda_transformed[y == 1][0], lda_transformed[y == 1][1], label='Class 2', c='blue')
-                # plt.scatter(lda_transformed[y == 2][0], lda_transformed[y == 2][1], label='Class 3', c='lightgreen')
-                #
-                # # Display legend and show plot
-                # plt.legend(loc=3)
-                # plt.show()
-                # print("")
+        if self.cluster_method is None or self.cluster_method == "sfkm":  # use regular k-medoids
+
+            from sklearn_extra.cluster import KMedoids
+
+            sfkm = KMedoids(n_clusters=self.n_clusters, max_iter=10, init='heuristic')
+            t0 = default_timer()
+            sfkm.fit(self.clustering_attributions)
+            self.duration = default_timer() - t0
+
+            centers = sfkm.medoid_indices_
+            members = [[], [], []]
+            for rowIndex, medoidIndex in enumerate(sfkm.labels_):
+                members[medoidIndex].append(rowIndex)
+
+            self.subpopulations = members
+            n = self.clustering_attributions.shape[0]
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, members)
+            self.explanations = self._get_explanations(centers)
+
+            imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+            mlist = []
+            for m in centers:
+                mlist.append(imgs_df.iloc[m].to_frame())
+            imgs_df['medoid'] = 0
+            groupsDict = {}
+            for m in centers:
+                for i in range(len(members)):
+                    if m in members[i]:
+                        groupsDict[m] = members[i]
+            for key, value in groupsDict.items():
+                imgs_df.loc[value, 'medoid'] = key
+            if self.show_plots:
+                parallelPlot(imgs_df)
+                radarPlot(imgs_df, mlist, self.attributions_path)
+                # facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+
+                self.subpopulations_indices = self.membersToSubPopulations(n, members)
+                ldaClusterPlotByCenters(centers, self.subpopulations_indices, self.clustering_attributions)
+            self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, centers)
+
+
+
 
         elif self.cluster_method == "parallel medoids":
             clusters = ParallelMedoids(attributions_path = self.attributions_path)
@@ -387,8 +423,6 @@ class GAM:
                 self.subpopulations_indices = self.membersToSubPopulations(n, clusters.members)
                 ldaClusterPlot(clusters, self.subpopulations_indices, self.clustering_attributions)
             self.avg_silhouette_score = silhouetteAnalysis(rank_df, self.n_clusters, clusters.centers)
-        elif self.cluster_method == "spectral clustering":
-            pass
 
         elif self.cluster_method == "bandit pam":
             banditPAM = BanditPAM(n_clusters=self.n_clusters)
@@ -427,53 +461,40 @@ class GAM:
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, banditPAM.centers)
 
         elif self.cluster_method == 'kernel medoids':
-            kernelMedoids = KernelMedoids(max_iter=2, dataset=self.dataset)
+
+            kernelMedoids = KernelMedoids(n_clusters=3, max_iter=10, dataset=self.dataset)
             n, total_data, feature_labels, duration = kernelMedoids.fit()
+
             self.duration = duration
             self.clustering_attributions = total_data
             self.attributions = total_data
             self.feature_labels = feature_labels
-            # self.feature_labels = range(1, len(imgs[0]+1))
+
 
             self.subpopulations = kernelMedoids.members
             self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, kernelMedoids.members)
             self.explanations = self._get_explanations(kernelMedoids.centers)
 
-            # imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
-            # mlist = []
-            # for m in kernelMedoids.centers:
-            #     mlist.append(imgs_df.iloc[m].to_frame())
-            # imgs_df['medoid'] = 0
-            # groupsDict = {}
-            # for m in kernelMedoids.centers:
-            #     for i in range(len(kernelMedoids.members)):
-            #         if m in kernelMedoids.members[i]:
-            #             groupsDict[m] = kernelMedoids.members[i]
-            # for key, value in groupsDict.items():
-            #     imgs_df.loc[value, 'medoid'] = key
-            # if self.show_plots:
-            #     parallelPlot(imgs_df)
-            #     radarPlot(imgs_df, mlist, self.attributions_path)
-            #     # facetedRadarPlot(imgs_df, mlist, self.attributions_path)
-            #
-            #     self.subpopulations_indices = self.membersToSubPopulations(n, kernelMedoids.members)
-            #     ldaClusterPlot(kernelMedoids, self.subpopulations_indices, self.clustering_attributions)
-            # self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, kernelMedoids.centers)
-
-            k_df = self.df
+            imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
             mlist = []
             for m in kernelMedoids.centers:
-                mlist.append(k_df.iloc[m].to_frame())
-            k_df['medoid'] = 0
-            for i in range(len(kernelMedoids.members)):
-                k_df.loc[i, 'medoid'] = kernelMedoids.members[i]
-
+                mlist.append(imgs_df.iloc[m].to_frame())
+            imgs_df['medoid'] = 0
+            groupsDict = {}
+            for m in kernelMedoids.centers:
+                for i in range(len(kernelMedoids.members)):
+                    if m in kernelMedoids.members[i]:
+                        groupsDict[m] = kernelMedoids.members[i]
+            for key, value in groupsDict.items():
+                imgs_df.loc[value, 'medoid'] = key
             if self.show_plots:
-                parallelPlot(k_df)
-                radarPlot(k_df, mlist, self.attributions_path)
-                facetedRadarPlot(k_df, mlist, self.attributions_path)
-                ldaClusterPlot(kernelMedoids, self.subpopulations, self.clustering_attributions)
-            self.avg_silhouette_score = silhouetteAnalysis(k_df, self.n_clusters, kernelMedoids.centers)
+                parallelPlot(imgs_df)
+                radarPlot(imgs_df, mlist, self.attributions_path)
+                # facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+
+                self.subpopulations_indices = self.membersToSubPopulations(n, kernelMedoids.members)
+                ldaClusterPlot(kernelMedoids, self.subpopulations_indices, self.clustering_attributions)
+            self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, kernelMedoids.centers)
 
         elif self.cluster_method == "spectral":
             # spectral = SpectralClustering(n_clusters=2, n_components=10)
@@ -499,7 +520,7 @@ class GAM:
 
 if __name__ == '__main__':
 
-    local_attribution_path = 'data/mushrooms.csv'
+    local_attribution_path = 'data/crime.csv'
     g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='kernel medoids', num_samp=200, show_plots=True, dataset='crime') # initialize GAM with filename, k=number of clusters
 
     #g = GAM(n_clusters=3, cluster_method=None, num_samp=200, show_plots=True, dataset="mushrooms") # initialize GAM with filename, k=number of clusters

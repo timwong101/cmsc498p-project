@@ -211,25 +211,6 @@ class RankedMedoids:
                             return False
         return True
 
-    # Perform PCA and plot
-    def pcaDataAndPlot(self, x, clusters):
-        pca = PCA(n_components=2)
-        principalComponents = pca.fit_transform(x)
-        principalDf = pd.DataFrame(data=principalComponents, columns=['principal component 1', 'principal component 2'])
-        colors = ['blue', 'black', 'yellow', 'green', 'purple']
-        plt.figure(figsize=(10, 8))
-        plt.xlim(-3, 3)
-        for i in clusters[0]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[0])
-        for i in clusters[1]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[1])
-        for i in clusters[2]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[2])
-        for i in clusters[3]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[3])
-        for i in clusters[4]:
-            plt.scatter(principalDf.loc[i][0], principalDf.loc[i][1], c=colors[4])
-
     # Do the main job of clustering. Define values for k, m, numOfLoops. When looping, update medoids accordingly
     def main(self, data, n_clusters):
         n = len(data)

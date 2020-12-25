@@ -93,11 +93,12 @@ def load_data(args):
     files = os.listdir(cwd)  # Get all the files in that directory
     print("Files in %r: %s" % (cwd, files))
 
-    cwdSplit = cwd.split("\\")
-    cwdSplit = cwdSplit.split("/")
-    currentFolder = cwdSplit[-1]
+    cwdSplitWindows = cwd.split("\\")
+    cwdSplitMac = cwd.split("/")
+    currentFolderWindows = cwdSplitWindows[-1]
+    currentFolderMac = cwdSplitMac[-1]
     prependDoubleDots = True
-    if currentFolder == 'gam_package':
+    if currentFolderWindows == 'gam_package' or currentFolderMac == 'gam_package':
         prependDoubleDots = False
 
     filepath = args.attributions_path
