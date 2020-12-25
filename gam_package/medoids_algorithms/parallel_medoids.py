@@ -1,20 +1,5 @@
-"""
-parallel_medoids contains the class ParallelMedoids which is used to run the parallel algorithm based off the paper:
-    Efficient Approaches for Solving the Large-Scale k-medoids Problem
-
-ParallelMedoids can be initialized by GAM
-
-The fit function is called from GAM
-
-The fit function calls cluster
-
-The cluster method run the algorithm that is used in parallel
-
-The algorithm is improved by both the multiprocessing library in Python, as well as Apache Spark
-"""
-
-
 import csv
+import vaex
 
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
@@ -68,28 +53,15 @@ class ParallelMedoids:
             vector.append(sum)
         return min(vector)
 
-    # helper function for apply_by_multiprocessing
-    def _apply_df(self, args):
-        df, func, num, kwargs = args
-        return num, df.apply(func, **kwargs)
-
-    # sets up workers for multiprocessing on apply functions
-    def apply_by_multiprocessing(self, df, func, **kwargs):
-        workers = kwargs.pop('workers')
-        pool = mp.Pool(processes=workers)
-        result = pool.map(self._apply_df, [(d, func, i, kwargs) for i, d in enumerate(np.array_split(df, workers))])
-        pool.close()
-        result = sorted(result, key=lambda x: x[0])
-        return pd.concat([i[1] for i in result])
 
     # chooses the first selection of medoids using a k-means++ style algorithm
     # uses a probability distribution to select better initial medoids than randomly choosing them
-    def initialSeeds(self, df, k):
-      N = df.count()
-      #dfp = df
-      dfp = df.toPandas()
-      sample = dfp.sample()
-      global medoidsList
+    def initialSeeds(self, dfx, k):
+      N = dfx.count()
+
+      #dfp = df.toPandas()
+      sample = dfx.sample()
+      # global medoidsList
       medoidsList = []
 
       # chooses the first medoid at random
@@ -99,10 +71,11 @@ class ParallelMedoids:
       for iter in range(1,k):
 
         # uses multiprocessing to speed up the apply function on distance
-        distances_series = self.apply_by_multiprocessing(dfp, self.distance, axis=1, workers=4)
-        distancesdf = distances_series.to_frame()
+        distances_series = dfx.apply(self.distance, arguments=[dfx.x])
 
-        distances_array = np.concatenate(distancesdf.values, axis = 0)
+        # distancesdf = distances_series.to_frame()
+
+        distances_array = np.concatenate(distances_series.values, axis = 0)
         sum = distancesdf[0].sum()
 
         # create probability distribution
@@ -171,13 +144,7 @@ class ParallelMedoids:
         return n, dfp, mlist, duration
 
     def _cluster(self, attributions_path, n_clusters):
-        sc = SparkContext().getOrCreate()
-        sc.setLogLevel("OFF")
-        sqlContext = SQLContext(sc)
 
-        # sets up the initial df and initializes variables
-        df = sqlContext.read.option("maxColumns", 30000).format('com.databricks.spark.csv').options(header='true', inferschema='true').load(attributions_path)
-        """
         #############################################################
         # use numpy to process data from csv file, the header labels are discarded
         self.attributions = np.genfromtxt(
@@ -186,18 +153,29 @@ class ParallelMedoids:
         # extract the feature labels
         with open(self.attributions_path) as attribution_file:
             self.feature_labels = next(csv.reader(attribution_file))
-        df = pd.DataFrame(self.attributions, columns=self.feature_labels)
-        ################################################################
-        """
+
+        dataframe = pd.DataFrame(self.attributions, columns=self.feature_labels)
+        if dataframe.isnull().values.any():
+            self.df = dataframe.fillna(dataframe.mean())
+            self.attributions = self.df.values
+        else:
+            self.df = dataframe
+
+        x = dataframe.to_numpy()
+        y = np.array(range(x.shape[0]))
+        dfx = vaex.from_arrays(x=x, y=y)
+
         max_iter = 10; k = n_clusters; sumOfDistances1 = float("inf")
-        df = df.na.drop()
-        #if df.isnull().values.any():
-        #    df = df.fillna(df.mean())
+        #df = df.na.drop()
+        # if df.isnull().values.any():
+        #     df = df.fillna(df.mean())
+        # df_filled = df.fillna(value=0)
+
         # set medoids equal to the initial medoids
-        medoids = self.initialSeeds(df, k)
+        medoids = self.initialSeeds(dfx, k)
         global nearestClustersGlobal
-        dfp = df.toPandas()
-        #dfp = df
+        # dfp = df.toPandas()
+
         # updates medoids until criteria is reached or the maximum number of iterations is reached
         for iter in range(0, max_iter):
             previousMedoids = copy.deepcopy(medoids)
@@ -256,9 +234,8 @@ class ParallelMedoids:
         for medoid, members in groupsDict.items():
             self.centers.append(medoid)
             self.members.append(members)
-        sc.stop()
         return self.centers, self.members, len(dfp), dfp, medoidsList
 
 if __name__ == '__main__':
-    parallelMedoids = ParallelMedoids()
+    parallelMedoids = ParallelMedoids2()
     parallelMedoids.fit()
