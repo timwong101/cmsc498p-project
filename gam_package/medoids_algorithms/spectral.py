@@ -1,9 +1,8 @@
-# https://github.com/dask/dask-ml/tree/master/dask_ml
-
 # -*- coding: utf-8 -*-
 """Algorithms for spectral clustering
 """
 import logging
+from timeit import default_timer
 
 import dask.array as da
 import numpy as np
@@ -12,11 +11,15 @@ from dask import delayed
 from scipy.linalg import pinv, svd
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
+from sklearn_extra.cluster import KMedoids
 
-from utilities._utils import draw_seed
-from utilities.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, pairwise_kernels
-from utilities.utils import _format_bytes, _log_array, check_array
-# from .k_means import KMeans
+from gam_package.preprocessor.preprocessor import setArguments, load_data
+from gam_package.utilities._utils import draw_seed
+from gam_package.utilities.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, pairwise_kernels
+from gam_package.utilities.utils import _format_bytes, _log_array, check_array
+
+# from gam_package.utilities.k_means import KMeans
+
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +142,7 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
 
     def __init__(
         self,
-        n_clusters=8,
+        n_clusters=3,
         eigen_solver=None,
         random_state=None,
         n_init=10,
@@ -147,7 +150,7 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
         affinity="rbf",
         n_neighbors=10,
         eigen_tol=0.0,
-        assign_labels="kmeans",
+        assign_labels="sklearn-kmeans",
         degree=3,
         coef0=1,
         kernel_params=None,
@@ -155,6 +158,8 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
         n_components=100,
         persist_embedding=False,
         kmeans_params=None,
+        dataset=None,
+        max_iter = 10
     ):
         self.n_clusters = n_clusters
         self.eigen_solver = eigen_solver
@@ -172,6 +177,8 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
         self.n_components = n_components
         self.persist_embedding = persist_embedding
         self.kmeans_params = kmeans_params
+        self.dataset = dataset
+        self.max_iter = max_iter
 
     def _check_array(self, X):
         logger.info("Starting check array")
@@ -179,8 +186,26 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
         logger.info("Finished check array")
         return result
 
-    def fit(self, X, y=None):
-        X = self._check_array(X)
+    def fit(self, X=None, y=None):
+
+        self.args = setArguments(self.dataset)
+        total_data, total_labels, sigma, feature_labels = load_data(self.args)
+
+        self.total_data = total_data
+        X = total_data
+        self.sigma = sigma
+        self.feature_labels = feature_labels
+
+        # if total_labels is None:
+        #     total_labels = np.array(range(X.shape[0]))
+
+        self.data = (total_data, total_labels, sigma, feature_labels)
+
+
+        # X = self._check_array(X)
+        start = default_timer()
+
+
         n_components = self.n_components
         metric = self.affinity
         rng = check_random_state(self.random_state)
@@ -188,16 +213,19 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
 
         # kmeans for final clustering
         if isinstance(self.assign_labels, str):
-            if self.assign_labels == "kmeans":
-                km = KMeans(
-                    n_clusters=n_clusters,
-                    random_state=draw_seed(rng, np.iinfo("i4").max, dtype="uint"),
-                )
-            elif self.assign_labels == "sklearn-kmeans":
+            # if self.assign_labels == "kmeans":
+            #     km = KMeans(
+            #         n_clusters=n_clusters,
+            #         random_state=draw_seed(rng, np.iinfo("i4").max, dtype="uint"),
+            #     )
+            # el
+            if self.assign_labels == "sklearn-kmeans":
                 km = sklearn.cluster.KMeans(n_clusters=n_clusters, random_state=rng)
+                print("")
             else:
-                msg = "Unknown 'assign_labels' {!r}".format(self.assign_labels)
-                raise ValueError(msg)
+                km = KMedoids(n_clusters=self.n_clusters, max_iter=self.max_iter, init='k-medoids++')
+                # msg = "Unknown 'assign_labels' {!r}".format(self.assign_labels)
+                # raise ValueError(msg)
         elif isinstance(self.assign_labels, BaseEstimator):
             km = self.assign_labels
         else:
@@ -209,6 +237,7 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
             km.set_params(**self.kmeans_params)
 
         n = len(X)
+        self.n = n
         if n <= n_components:
             msg = (
                 "'n_components' must be smaller than the number of samples."
@@ -301,13 +330,26 @@ class SpectralClustering(BaseEstimator, ClusterMixin):
             pass
         logger.info("k-means for assign_labels[starting]")
         km.fit(U2)
+        # sfkm.fit(feature_rdd)
         logger.info("k-means for assign_labels[finished]")
 
         # Now... what to keep?
         self.assign_labels_ = km
         self.labels_ = km.labels_
         self.eigenvalues_ = S_A[:n_clusters]  # TODO: better name
-        return self
+
+
+        # self.members = sfkm.labels_
+        members = [[], [], []]
+        for rowIndex, medoidIndex in enumerate(km.labels_):
+            members[medoidIndex].append(rowIndex)
+
+        self.members = members
+        self.centers = km.medoid_indices_
+
+        self.duration  = default_timer() - start
+        return self.n, self.total_data, self.feature_labels, self.duration
+        # return self
 
 
 def embed(X_keep, X_rest, n_components, metric, kernel_params):
@@ -374,3 +416,11 @@ def _slice_mostly_sorted(array, keep, rest, ind=None):
         slices.append(slice(keep[-1] + 1, None))
     result = da.concatenate([array[idx[slice_]] for slice_ in slices])
     return result
+
+if __name__ == '__main__':
+
+    spectral = SpectralClustering(dataset="mushrooms", assign_labels="k-medoids")
+    n, total_data, feature_labels, duration = spectral.fit()
+    print("centers: ", spectral.centers)
+    print("members: ", spectral.members)
+    print("duration: ", spectral.duration)

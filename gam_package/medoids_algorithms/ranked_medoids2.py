@@ -81,9 +81,8 @@ class RankedMedoids:
 
     def cluster(self, n_clusters):
         self.args = setArguments(self.dataset)
-        dataset = self.loadData(self.args)
-        R, sortedIndex = self.buildTables(dataset)
-        self.sortedIndex = sortedIndex; self.R = R
+        data = self.loadData(self.args)
+        R, sortedIndex = self.buildTables(data)
 
 
     def buildTables(self, data):
@@ -128,6 +127,8 @@ class RankedMedoids:
         print("")
         printTable(R)
 
+        self.sortedIndex = sortedIndex
+        self.R = R
         return R, sortedIndex
 
 
@@ -169,8 +170,8 @@ class RankedMedoids:
 
 
 if __name__ == '__main__':
-    # rankedMedoids = RankedMedoids()
-    # rankedMedoids.cluster()
+    rankedMedoids = RankedMedoids()
+    rankedMedoids.cluster()
 
 
 

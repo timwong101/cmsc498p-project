@@ -84,15 +84,11 @@ class KernelMedoids:
     def fit(self, X=None, plotit=False, verbose=True, attributions_path=None):
 
         ## Loads data
-        # self.data = vaex.from_csv(self.attributions_path, copy_index = True)
 
         self.args = setArguments(self.dataset)
         total_data, total_labels, sigma, feature_labels = load_data(self.args)
-        # total_data = total_data[np.random.choice(range(len(total_data)), size=args.sample_size, replace=False)]
 
         ## Parse the data to get labels and features
-        # RDD[(Int, Array[Double])]
-        # label_vector_rdd = df.rdd.map(pair= > (pair[0], pair[1]) )
         self.total_data = total_data
         x = total_data
         self.sigma = sigma
@@ -390,7 +386,6 @@ class KernelMedoids:
 
     # /mnt/c/Users/charm/PycharmProjects/SparkKernelKMeans/data
 
-
 # '''
 
 if __name__ == '__main__':
@@ -398,5 +393,4 @@ if __name__ == '__main__':
     n, total_data, feature_labels, duration = kernelMedoids.fit()
     print("centers: ", kernelMedoids.centers)
     print("members: ", kernelMedoids.members)
-    print("medoid_indices_: ", kernelMedoids.medoid_indices)
     print("duration: ", kernelMedoids.duration)
