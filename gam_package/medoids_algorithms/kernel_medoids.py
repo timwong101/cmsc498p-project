@@ -68,7 +68,6 @@ class KernelMedoids:
         self.SIGMA = SIGMA
         self.dataset = dataset
 
-        print("####################################")
         print("cluster number = ", CLUSTER_NUM)
         print("target dimension = ", TARGET_DIM)
         print("sketch size = ", SKETCH_SIZE)
@@ -107,7 +106,6 @@ class KernelMedoids:
         self.cluster(label_vector_rdd, self.CLUSTER_NUM, self.TARGET_DIM, self.SKETCH_SIZE, self.SIGMA)
 
         return self.n, self.total_data, self.feature_labels, self.duration
-        print("")
 
     '''
      * Compute the RBF kernel function of two vectors.
@@ -250,11 +248,9 @@ class KernelMedoids:
         ## decompose W as: U * U^T \approx W^{-1}
         u_mat = self.nystrom_w_mat(data_samples, sigma)
 
-        print("")
         ## Compute the features extracted by Nystrom
         ## feature matrix is C * W^{-1/2}_{c/2}
         # nystrom_rdd = c_mat_rdd.map(lambda row: row.t * u_mat).map(lambda row: pair._2.t)
-        print("")
         self.u_mat = u_mat
         nystrom_rddX = c_mat_rdd.apply(self.multiplyRowUMat, arguments=[c_mat_rdd.x])  # returned only x values
 
@@ -302,9 +298,7 @@ class KernelMedoids:
         t1 = default_timer() - t0
 
         ##label_vector_rdd.unpersist()
-        print("####################################")
         print("Nystrom method costs  ", t1, "  seconds.")
-        print("####################################")
 
         ## Extract s principal components from the Nystrom features
         ## The V matrix stored in a local dense matrix
@@ -314,7 +308,6 @@ class KernelMedoids:
 
         # svd: SingularValueDecomposition[RowMatrix, Matrix] = mat.computeSVD(s, computeU = false)
         U, S, Vt = svds(mat, k=s)
-        print("")
         # v_mat: Matrix = svd.V.transpose
         # v_mat = V.transpose
         v_mat = Vt
@@ -335,11 +328,9 @@ class KernelMedoids:
         nystrom_pca_rdd = vaex.from_arrays(x=x, y=y)
         t3 = default_timer() - t2
 
-        print("####################################")
         print("PCA costs  ", t3, "  seconds.")
-        print("####################################")
 
-        print('The scikit-learn version is {}.'.format(sklearn.__version__))
+        # print('The scikit-learn version is {}.'.format(sklearn.__version__))
 
         ## K-means clustering over the extracted features
         t4 = default_timer()
@@ -372,9 +363,7 @@ class KernelMedoids:
 
         t5 = default_timer() - t4
         self.duration = default_timer() - t0
-        print("####################################")
         print("K-medoids clustering costs  ", t5, "  seconds.")
-        print("####################################")
 
         ## Predict labels
         # labels: Array[String] = nystrom_pca_rdd

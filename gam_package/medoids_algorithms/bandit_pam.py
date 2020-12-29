@@ -50,7 +50,7 @@ class BanditPAM:
         self.SIGMA_DIVISOR = 1
 
     def init_logstring(self):
-        print("data_utils -> init_logstring")
+        #print("data_utils -> init_logstring")
         '''
         Create an empty logstring with the desired fields. The logstrings will be
         updated by the algorithms.
@@ -66,7 +66,7 @@ class BanditPAM:
         return logstring
 
     def update_logstring(self, logstring, k, best_distances, compute_exactly, p, sigma, swap=None):
-        print("data_utils -> update_logstring")
+        #print("data_utils -> update_logstring")
         '''
         Update a given logstring (python dict) with the results of a BUILD or SWAP
         iteration.
@@ -93,7 +93,7 @@ class BanditPAM:
         return logstring
 
     def empty_counter(self):
-        # print("data_utils -> empty_counter")
+        # #print("data_utils -> empty_counter")
         '''
         Empty function that is called once for every distance call. Allows for easy
         counting of the number of distance calls.
@@ -101,7 +101,7 @@ class BanditPAM:
         pass
 
     def d(self, x1, x2, metric=None):
-        # print("data_utils -> d")
+        # #print("data_utils -> d")
         '''
         Computes the distance between x1 and x2. If x2 is a list, computes the
         distance between x1 and every x2.
@@ -137,7 +137,7 @@ class BanditPAM:
                 raise Exception("Bad metric specified")
 
     def d_tree(self, x1, x2, metric=None, dist_mat=None):
-        print("data_utils -> d_tree")
+        #print("data_utils -> d_tree")
         '''
         Use this function for computing the edit distance between two trees.
         Supports both on-the-fly computation (metric == 'TREE') as well as using the
@@ -174,7 +174,7 @@ class BanditPAM:
             raise Exception('Bad metric argument to tree distance function')
 
     def cost_fn(self, dataset, tar_idx, ref_idx, best_distances, metric=None, use_diff=True, dist_mat=None):
-        # print("data_utils -> cost_fn")
+        # #print("data_utils -> cost_fn")
         '''
         Returns the "cost" of adding the pointpoint tar as a medoid:
         distances from tar to ref if it's less than the existing best distance,
@@ -205,7 +205,7 @@ class BanditPAM:
             return np.minimum(self.d(dataset[tar_idx].reshape(1, -1), dataset[ref_idx], metric), best_distances[ref_idx])
 
     def cost_fn_difference(self, imgs, swaps, tmp_refs, current_medoids, metric=None):
-        print("data_utils -> cost_fn_difference")
+        #print("data_utils -> cost_fn_difference")
         '''
         Do not use this function. Always run experiments with the FastPAM1
         optimization, because it yields the same result.
@@ -248,7 +248,7 @@ class BanditPAM:
 
     def cost_fn_difference_FP1(self, imgs, swaps, tmp_refs, current_medoids, metric=None, return_sigma=False, use_diff=True,
                                dist_mat=None):
-        print("data_utils -> cost_fn_difference_FP1")
+        #print("data_utils -> cost_fn_difference_FP1")
         '''
         Returns the new losses if we were to perform the swaps in swaps, as in
         cost_fn_difference above, but using the FastPAM1 optimization.
@@ -314,7 +314,7 @@ class BanditPAM:
         return new_losses
 
     def get_best_distances(self, medoids, dataset, subset=None, return_second_best=False, metric=None, dist_mat=None):
-        print("data_utils -> get_best_distances")
+        #print("data_utils -> get_best_distances")
         '''
         For each point, calculate the minimum distance to any medoid.
 
@@ -375,14 +375,14 @@ class BanditPAM:
 
     # TODO: Explicitly pass metric instead of args.metric here
     def medoid_swap(self, medoids, best_swap, imgs, loss, args, dist_mat=None):
-        print("\nmedoid_swap")
+        #print("\nmedoid_swap")
         '''
         Swaps the medoid-nonmedoid pair in best_swap if it would lower the loss on
         the datapoints in imgs. Returns a string describing whether the swap was
         performed, as well as the new medoids and new loss.
         '''
 
-        # NOTE Store these explicitly to avoid incorrect reference after medoids have been updated when printing
+        # NOTE Store these explicitly to avoid incorrect reference after medoids have been updated when #printing
         orig_medoid = medoids[best_swap[0]]
         new_medoid = best_swap[1]
 
@@ -396,11 +396,11 @@ class BanditPAM:
         performed_or_not = ''
         if new_loss < loss:
             performed_or_not = "SWAP PERFORMED"
-            print("SWAP PERFORMED")
+            #print("SWAP PERFORMED")
             swap_performed = True
         else:
             performed_or_not = "NO SWAP PERFORMED"
-            print("NO SWAP PERFORMED")
+            #print("NO SWAP PERFORMED")
             new_medoids = medoids
 
         if args.verbose >= 1:
@@ -409,12 +409,12 @@ class BanditPAM:
             print("Old loss:", loss)
             print("New loss:", new_loss)
 
-        print("updated medoids: ", new_medoids)
+        #print("updated medoids: ", new_medoids)
         return performed_or_not, new_medoids, min(new_loss, loss)
 
     def build_sample_for_targets(self, imgs, targets, batch_size, best_distances, metric=None, return_sigma=False,
                                  dist_mat=None):
-        print("ucb_pam -> build_sample_for_targets")
+        #print("ucb_pam -> build_sample_for_targets")
         '''
         For the given targets, which are candidate points to be assigned as medoids
         during a build step, we compute the changes in loss they would induce
@@ -446,7 +446,7 @@ class BanditPAM:
         return estimates.round(self.DECIMAL_DIGITS), None, tmp_refs
 
     def build(self, args, imgs, sigma, dist_mat=None):
-        print("ucb_pam -> build")
+        #print("ucb_pam -> build")
         '''
         Performs the BUILD step of BanditPAM. Analogous to the BUILD step of PAM,
         BanditPAM assigns the initial medoids one-by-one by choosing the point at
@@ -565,8 +565,8 @@ class BanditPAM:
 
             medoids.append(new_medoid)
             best_distances, closest_medoids = self.get_best_distances(medoids, imgs, metric=metric, dist_mat=dist_mat)
-            # print("updated medoids: ", closest_medoids)
-            print("Computed exactly for:", exact_mask.sum())
+            # #print("updated medoids: ", closest_medoids)
+            #print("Computed exactly for:", exact_mask.sum())
 
             # get information about sigmas: min, 25, median, 75, max, mean
             sigma_arr = [np.min(sigmas), np.quantile(sigmas, 0.25), np.median(sigmas), np.quantile(sigmas, 0.75),
@@ -577,7 +577,7 @@ class BanditPAM:
 
     def swap_sample_for_targets(self, imgs, targets, current_medoids, batch_size, FastPAM1=False, metric=None,
                                 return_sigma=False, dist_mat=None):
-        print("ucb_pam -> swap_sample_for_targets")
+        #print("ucb_pam -> swap_sample_for_targets")
         '''
         For the given targets (potential swaps) during a swap step, we compute the
         changes in loss they would induce on a subsample of batch_size reference
@@ -619,7 +619,7 @@ class BanditPAM:
         return estimates.round(self.DECIMAL_DIGITS), None, tmp_refs
 
     def swap(self, args, imgs, sigma, init_medoids, dist_mat=None, cache_computed=None):
-        print("swap")
+        #print("swap")
         '''
         Performs the SWAP step of BanditPAM. Analogous to the SWAP step of PAM,
         BanditPAM chooses medoids to swap with non-medoids by performing the swap
@@ -736,7 +736,7 @@ class BanditPAM:
             old_medoid_x = medoids[best_swap[0]]
             new_medoid_x = best_swap[1]
 
-            print("Computed exactly for:", exact_mask.sum())
+            #print("Computed exactly for:", exact_mask.sum())
             performed_or_not, medoids, loss = self.medoid_swap(medoids, best_swap, imgs, loss, args, dist_mat=dist_mat)
 
             if original_batch_size >= len(imgs):
@@ -755,7 +755,7 @@ class BanditPAM:
         return medoids, S_logstring, iter, loss
 
     def build_and_swap(self, args):
-        print("build_and_swap")
+        #print("build_and_swap")
         '''
         Run the entire BanditPAM algorithm, both the BUILD step and the SWAP step
         '''
@@ -767,6 +767,8 @@ class BanditPAM:
         total_data, total_labels, sigma, feature_labels = load_data(args)
         self.feature_labels = feature_labels
         np.random.seed(args.seed)
+
+        self.startDuration = default_timer()
         if args.metric == 'PRECOMP':
             dist_mat = np.loadtxt('tree-3630.dist')
             random_indices = np.random.choice(len(total_data), size=args.sample_size, replace=False)
@@ -785,7 +787,7 @@ class BanditPAM:
             assert args.cache_computed is None, "Cache_computed should be None"
             built_medoids, B_logstring, cache_computed = self.build(args, imgs, sigma, dist_mat=dist_mat)
             args.cache_computed = cache_computed
-            print("Built medoids", built_medoids)
+            #print("Built medoids", built_medoids)
 
         swapped_medoids = []
         S_logstring = {}
@@ -795,7 +797,7 @@ class BanditPAM:
 
             if built_medoids == []:
                 init_medoids = list(map(int, args.warm_start_medoids.split(',')))
-                print("Swap init medoids:", init_medoids)
+                #print("Swap init medoids:", init_medoids)
             else:
                 init_medoids = built_medoids.copy()
 
@@ -803,7 +805,7 @@ class BanditPAM:
                                                                                     init_medoids,
                                                                                     dist_mat=dist_mat,
                                                                                     cache_computed=args.cache_computed)
-            print("Final medoids", swapped_medoids)
+            #print("Final medoids", swapped_medoids)
 
         uniq_d = np.sum(args.cache_computed)
         #return built_medoids, swapped_medoids, B_logstring, S_logstring, num_swaps, final_loss, uniq_d
@@ -836,9 +838,9 @@ class BanditPAM:
         """
         if attributions_path is not None:
             self.attributions_path = attributions_path
-        start = default_timer()
         _,_, n, imgs, feature_labels = self.makeClusters(dataset, num_samp)
-        duration = default_timer() - start
+
+        self.duration = default_timer() - self.startDuration
         if plotit:
             _, ax = plt.subplots(1, 1)
             colors = ["b", "g", "r", "c", "m", "y", "k"]
@@ -856,7 +858,7 @@ class BanditPAM:
                     s=250,
                     marker="*",
                 )
-        return n, imgs, feature_labels, duration
+        return n, imgs, feature_labels, self.duration
 
 
 

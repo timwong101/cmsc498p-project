@@ -291,7 +291,6 @@ class GAM:
             self.clustering_attributions = GAM.normalize(self.attributions)
         else: # attributions non-normalized
             self.clustering_attributions = self.attributions
-        print("self.attributions: ",str(self.attributions))
 
 
         # Cluster according to appropriate algorithm, distance metric
@@ -498,7 +497,7 @@ class GAM:
 
         elif self.cluster_method == "spectral":
 
-            spectral = SpectralClustering(n_clusters=3, n_components=10, dataset="mushrooms", assign_labels="k-medoids")
+            spectral = SpectralClustering(n_clusters=3, n_components=10, dataset=self.dataset, assign_labels="k-medoids")
             n, total_data, feature_labels, duration = spectral.fit()
 
             self.duration = duration

@@ -59,7 +59,7 @@ def setArguments(datasetFilePath, num_samp=200, n_clusters = 3):
 
     cwd = os.getcwd()  # Get the current working directory (cwd)
     files = os.listdir(cwd)  # Get all the files in that directory
-    print("Files in %r: %s" % (cwd, files))
+    # print("Files in %r: %s" % (cwd, files))
 
     if args.dataset == 'MNIST':
         pass
@@ -83,7 +83,7 @@ def setArguments(datasetFilePath, num_samp=200, n_clusters = 3):
     return args
 
 def load_data(args):
-    print("data_utils -> load_data")
+    print("load_data")
     '''
     Load the different datasets, as a numpy matrix if possible. In the case of
     HOC4, load the datasets as a list of trees.
@@ -91,7 +91,7 @@ def load_data(args):
 
     cwd = os.getcwd()  # Get the current working directory (cwd)
     files = os.listdir(cwd)  # Get all the files in that directory
-    print("Files in %r: %s" % (cwd, files))
+    # print("Files in %r: %s" % (cwd, files))
 
     cwdSplitWindows = cwd.split("\\")
     cwdSplitMac = cwd.split("/")
