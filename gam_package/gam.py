@@ -24,7 +24,7 @@ from gam_package.distance_functions.spearman_distance import spearman_squared_di
 from gam_package.distance_functions.euclidean_distance import euclidean_distance
 
 from gam_package.medoids_algorithms.parallel_medoids import ParallelMedoids
-# from gam_package.medoids_algorithms.parallel_medoids2 import ParallelMedoids2
+# from gam_package.medoids_algforithms.parallel_medoids2 import ParallelMedoids2
 from gam_package.medoids_algorithms.spectral import SpectralClustering
 from gam_package.plot_functions.plot import parallelPlot, radarPlot, facetedRadarPlot, silhouetteAnalysis, \
     ldaClusterPlot, ldaClusterPlotByCenters
@@ -497,19 +497,40 @@ class GAM:
             self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, kernelMedoids.centers)
 
         elif self.cluster_method == "spectral":
-            # spectral = SpectralClustering(n_clusters=2, n_components=10)
-            # predictions = spectral.fit_predict(self.clustering_attributions)
-            #
 
-            # spectral = dask_ml.cluster.SpectralClustering(n_clusters=2, n_components=100)
-            # predictions = spectral.fit(self.clustering_attributions)
-            #
-            # spectralParams = spectral.get_params()
-            #
-            # self.subpopulations = spectral.members
-            # self.subpopulation_sizes = GAM.get_subpopulation_sizes(n, spectral.members)
-            # self.explanations = self._get_explanations(spectral.centers)
-            print("")
+            spectral = SpectralClustering(n_clusters=3, n_components=10, dataset="mushrooms", assign_labels="k-medoids")
+            n, total_data, feature_labels, duration = spectral.fit()
+
+            self.duration = duration
+            self.clustering_attributions = total_data
+            self.attributions = total_data
+            self.feature_labels = feature_labels
+
+            self.subpopulations = spectral.members
+            self.subpopulation_sizes = GAM.get_subpopulation_sizes_lol(n, spectral.members)
+            self.explanations = self._get_explanations(spectral.centers)
+
+            imgs_df = pd.DataFrame(self.attributions, columns=self.feature_labels)
+            mlist = []
+            for m in spectral.centers:
+                mlist.append(imgs_df.iloc[m].to_frame())
+            imgs_df['medoid'] = 0
+            groupsDict = {}
+            for m in spectral.centers:
+                for i in range(len(spectral.members)):
+                    if m in spectral.members[i]:
+                        groupsDict[m] = spectral.members[i]
+            for key, value in groupsDict.items():
+                imgs_df.loc[value, 'medoid'] = key
+            if self.show_plots:
+                parallelPlot(imgs_df)
+                radarPlot(imgs_df, mlist, self.attributions_path)
+                # facetedRadarPlot(imgs_df, mlist, self.attributions_path)
+
+                self.subpopulations_indices = self.membersToSubPopulations(n, spectral.members)
+                ldaClusterPlot(spectral, self.subpopulations_indices, self.clustering_attributions)
+            self.avg_silhouette_score = silhouetteAnalysis(imgs_df, self.n_clusters, spectral.centers)
+
 
         else: # use passed in cluster_method and pass in GAM itself
             self.cluster_method(self)
@@ -521,7 +542,7 @@ class GAM:
 if __name__ == '__main__':
 
     local_attribution_path = 'data/crime.csv'
-    g = GAM(attributions_path = local_attribution_path, n_clusters=3, cluster_method='kernel medoids', num_samp=200, show_plots=True, dataset='crime') # initialize GAM with filename, k=number of clusters
+    g = GAM(attributions_path = local_attribution_path, n_clusters=2, cluster_method='spectral', num_samp=200, show_plots=True, dataset='crime') # initialize GAM with filename, k=number of clusters
 
     #g = GAM(n_clusters=3, cluster_method=None, num_samp=200, show_plots=True, dataset="mushrooms") # initialize GAM with filename, k=number of clusters
     g.generate() # generate GAM using k-medoids algorithm with number of features specified

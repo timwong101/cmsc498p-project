@@ -3,8 +3,6 @@ from typing import List
 from collections import defaultdict, deque
 from enum import Enum
 
-
-
 class Solution(object):
     def findRedundantConnection(self, edges):
         graph = defaultdict(set)
