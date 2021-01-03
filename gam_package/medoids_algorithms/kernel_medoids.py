@@ -52,7 +52,7 @@ from sklearn_extra.cluster import KMedoids
 class KernelMedoids:
 
     def __init__(self, n_clusters=3, max_iter=100, tol=0.0001, attributions_path="data/mushrooms.csv",
-                 CLUSTER_NUM=3, TARGET_DIM=6, SKETCH_SIZE=60, SIGMA=1, dataset=None):
+                 CLUSTER_NUM=3, TARGET_DIM=10, SKETCH_SIZE=60, SIGMA=1, dataset=None):
 
         self.attributions_path = attributions_path
         self.n_clusters = n_clusters
